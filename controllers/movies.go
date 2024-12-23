@@ -266,7 +266,7 @@ func OrderMovies(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, task{
 		Success: true,
-		Message: "add movie sukses",
+		Message: "Order tiket sukses",
 		Result:  order,
 	})
 
