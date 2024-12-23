@@ -9,9 +9,11 @@ import (
 
 func UsersRouter(router *gin.RouterGroup) {
 	router.Use(middleware.ValidasiToken())
-	router.GET("", controllers.AllUsers)
-	router.GET("/:id", controllers.IdUsers)
-	router.POST("/", controllers.AddUser)
-	router.PATCH("/:id", controllers.EditUser)
-	router.DELETE("/:id", controllers.DeleteUser)
+	router.GET("", controllers.AllUsersDB)
+	// router.GET("/:id", controllers.IdUsers)
+	// router.POST("/", controllers.AddUser)
+	// router.PATCH("/:id", controllers.EditUser)
+	router.PATCH("", controllers.EditUser)
+	// router.DELETE("/:id", controllers.DeleteUser)
+	router.GET("/db/:id", controllers.UsersId)
 }

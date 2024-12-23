@@ -2,38 +2,39 @@ package controllers
 
 import (
 	lib "backend/lib"
+	"backend/models"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-func AuthLogin(ctx *gin.Context) {
+func AuthLogin(c *gin.Context) {
+	var login models.User_credentials
 
-	var login User
-
-	ctx.ShouldBind(&login)
-
-	var user User
-	for _, i := range users {
-		if i.Email == login.Email {
-			user = i
-
-		}
-	}
-
-	if user == (User{}) {
-		ctx.JSON(http.StatusNotFound, TaskResponse{
+	if err := c.ShouldBind(&login); err != nil {
+		c.JSON(http.StatusBadRequest, TaskResponse{
 			Success: false,
-			Message: "Email not found",
+			Message: "Invalid request payload",
+			Result:  nil,
 		})
 		return
 	}
 
-	// match, _ := argon2.ComparePasswordAndHash(login.Password, login.Password, user.Password)
-	if lib.VerifyHash(user.Password, login.Password) {
-		ctx.JSON(http.StatusUnauthorized, TaskResponse{
+	user := models.UserByEmail(login.Email)
+	if user == (models.User_credentials{}) {
+		c.JSON(http.StatusNotFound, TaskResponse{
+			Success: false,
+			Message: "Email not found",
+			Result:  nil,
+		})
+		return
+	}
+
+	if !lib.VerifyHash(user.Password, login.Password) {
+		c.JSON(http.StatusUnauthorized, TaskResponse{
 			Success: false,
 			Message: "Invalid password",
+			Result:  nil,
 		})
 		return
 	}
@@ -41,26 +42,21 @@ func AuthLogin(ctx *gin.Context) {
 	token := lib.GeneratePass(struct {
 		UserId int `json:"userid"`
 	}{
-		UserId: login.Id,
+		UserId: user.Id,
 	})
 
-	ctx.JSON(http.StatusOK, TaskResponse{
+	c.JSON(http.StatusOK, TaskResponse{
 		Success: true,
 		Message: "Login successful",
 		Result:  token,
 	})
-
 }
 
 func Register(ctx *gin.Context) {
 
-	var newUser User
-
-	err1 := ctx.ShouldBind(&newUser)
-	if err1 != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err1.Error()})
-		return
-	}
+	var newUser models.User_credentials
+	ctx.ShouldBind(&newUser)
+	// fmt.Printf("Received User Data: %+v\n", newUser)
 
 	err := validatePassword(newUser.Password)
 	if err != nil {
@@ -71,22 +67,16 @@ func Register(ctx *gin.Context) {
 		return
 	}
 
-	newUser.Id = len(users) + 1
-	users = append(users, newUser)
-
-	hasher := lib.GenerateHash(newUser.Password)
-	if hasher == newUser.Email {
-		ctx.JSON(http.StatusUnauthorized, TaskResponse{
-			Success: false,
-			Message: "Invalid password",
-		})
-		return
+	if newUser.Password != "" {
+		newUser.Password = lib.GenerateHash(newUser.Password)
 	}
+
+	models.InserUser(newUser)
 
 	ctx.JSON(http.StatusOK, TaskResponse{
 		Success: true,
 		Message: "Register sukses",
-		Result:  hasher,
+		// Result:  UserN,
 	})
 
 }

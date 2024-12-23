@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"backend/controllers"
 	lib "backend/lib"
 	"net/http"
 	"strings"
@@ -11,10 +10,22 @@ import (
 	"github.com/go-jose/go-jose/v4/jwt"
 )
 
+type Response struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+}
+
 func ValidasiToken() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		head := ctx.GetHeader("Authorization")
-		// fmt.Println(head)
+		if head == "" {
+			ctx.JSON(http.StatusUnauthorized, Response{
+				Success: false,
+				Message: "Unauthorized",
+			})
+			ctx.Abort()
+			return
+		}
 		token := strings.Split(head, " ")[1:][0]
 
 		tok, _ := jwt.ParseSigned(token, []jose.SignatureAlgorithm{jose.HS256})
@@ -24,7 +35,7 @@ func ValidasiToken() gin.HandlerFunc {
 		err := tok.Claims(lib.SECRET, &out)
 
 		if err != nil {
-			ctx.JSON(http.StatusUnauthorized, controllers.TaskResponse{
+			ctx.JSON(http.StatusUnauthorized, Response{
 				Success: false,
 				Message: "Unauthorized",
 			})

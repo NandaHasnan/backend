@@ -11,6 +11,8 @@ func main() {
 
 	// router.GET("/movies", controllers.Movies)
 	// router.GET("/users", controllers.Users)
+	router.MaxMultipartMemory = 8 << 20
+	router.Static("/movies/image", "./upload/movies")
 
 	routers.Routers(router)
 
