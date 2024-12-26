@@ -2,6 +2,7 @@ package middleware
 
 import (
 	lib "backend/lib"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -30,9 +31,18 @@ func ValidasiToken() gin.HandlerFunc {
 
 		tok, _ := jwt.ParseSigned(token, []jose.SignatureAlgorithm{jose.HS256})
 
-		out := jwt.Claims{}
+		// out := jwt.Claims{}
+		out := make(map[string]interface{})
 
+		// godotenv.Load()
+		// var JWT_SECRET []byte = []byte(lib.Getmd5(os.Getenv("JWT_SECRET")))
+
+		// err := tok.Claims(JWT_SECRET, &out)
 		err := tok.Claims(lib.SECRET, &out)
+
+		fmt.Println(out["userid"])
+
+		ctx.Set("userid", out["userid"].(float64))
 
 		if err != nil {
 			ctx.JSON(http.StatusUnauthorized, Response{

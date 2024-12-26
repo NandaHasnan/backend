@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"math"
 	"net/http"
 	"strconv"
@@ -221,19 +222,23 @@ func IdMovies(ctx *gin.Context) {
 
 func AddMovies(ctx *gin.Context) {
 
-	var newMovie models.Movie
+	var newMovie models.Movie_body
 	ctx.ShouldBind(&newMovie)
-	f, _ := ctx.MultipartForm()
-	file, err := ctx.FormFile("image")
-	if err != nil {
+	// f, _ := ctx.MultipartForm()
+	h, _ := ctx.MultipartForm()
+	file, _ := ctx.FormFile("image_movie")
+	maxFile := 2 * 1024 * 1024
+	if file.Size > int64(maxFile) {
 		ctx.JSON(http.StatusBadRequest, TaskResponse{
 			Success: false,
 			Message: "File size is large",
 		})
 		return
 	}
+	log.Println(newMovie)
 
-	newMovie.Synopsis = f.Value["synopsis"][0]
+	// newMovie.Release_date = f.Value["duration"][0]
+	newMovie.Release_date = h.Value["release_date"][0]
 
 	if file.Filename != "" {
 		filename := uuid.New().String()
@@ -247,7 +252,11 @@ func AddMovies(ctx *gin.Context) {
 		ctx.SaveUploadedFile(file, fmt.Sprintf("upload/movies/%s", filestored))
 		newMovie.Image_movie = filestored
 	}
-	movie := models.InsertMovie(newMovie)
+	movie, err := models.InsertMovie(newMovie)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	ctx.JSON(http.StatusOK, task{
 		Success: true,
@@ -259,10 +268,20 @@ func AddMovies(ctx *gin.Context) {
 
 func OrderMovies(ctx *gin.Context) {
 
-	var orderMovie models.Order
-	ctx.ShouldBind(&orderMovie)
+	var orderMovie models.OrderBody
+	err := ctx.ShouldBind(&orderMovie)
 
-	order := models.OrderTicket(orderMovie)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	order, err := models.OrderTicket(orderMovie)
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	ctx.JSON(http.StatusOK, task{
 		Success: true,
@@ -272,78 +291,126 @@ func OrderMovies(ctx *gin.Context) {
 
 }
 
-// func EditMovies(ctx *gin.Context) {
+func EditMovies(ctx *gin.Context) {
+	iddb, _ := strconv.Atoi(ctx.Param("id"))
+	_, err := models.MovieById2(iddb)
 
-// 	iddb, _ := strconv.Atoi(ctx.Param("id"))
-// 	movies := models.MovieById(iddb)
-// 	if movies == (models.Movie{}) {
-// 		ctx.JSON(http.StatusBadRequest, TaskResponse{
-// 			Success: false,
-// 			Message: "invalid edit movie",
-// 			Result:  iddb,
-// 		})
-// 		return
-// 	}
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, TaskResponse2{
+			Success: false,
+			Message: err.Error(),
+		})
+		return
+	}
 
-// 	ctx.ShouldBind(&movies)
+	var moviesBody models.Movie_body
 
-// 	f, _ := ctx.MultipartForm()
-// 	file, err := ctx.FormFile("image")
-// 	if err != nil {
-// 		ctx.JSON(http.StatusBadRequest, TaskResponse{
-// 			Success: false,
-// 			Message: "File size is large",
-// 		})
-// 		return
-// 	}
+	if err := ctx.ShouldBind(&moviesBody); err != nil {
+		ctx.JSON(http.StatusBadRequest, TaskResponse2{
+			Success: false,
+			Message: "Invalid input data",
+		})
+		return
+	}
 
-// 	movies.Synopsis = f.Value["synopsis"][0]
+	moviesBody.Id = iddb
 
-// 	if file.Filename != "" {
-// 		filename := uuid.New().String()
-// 		splitFile := strings.Split(file.Filename, ".")
-// 		filex := splitFile[len(splitFile)-1]
-// 		if filex != ".jpg" && filex != ".png" {
-// 			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Only .jpg and .png files are allowed"})
-// 			return
-// 		}
-// 		filestored := fmt.Sprintf("%s.%s", filename, filex)
-// 		ctx.SaveUploadedFile(file, fmt.Sprintf("upload/movies/%s", filestored))
-// 		movies.Image = filestored
-// 	}
+	file, err := ctx.FormFile("image_movie")
 
-// 	UpdateMovie := models.UpdateMovie(movies)
+	if err != nil {
+		log.Println(err.Error())
+		ctx.JSON(http.StatusBadRequest, TaskResponse2{
+			Success: false,
+			Message: "No file provided",
+		})
+		return
+	}
 
-// 	ctx.JSON(http.StatusOK, TaskResponse{
-// 		Success: true,
-// 		Message: "Update Movie sukses",
-// 		Result:  UpdateMovie,
-// 	})
+	maxFile := 2 * 1024 * 1024
+	if file.Size > int64(maxFile) {
+		ctx.JSON(http.StatusBadRequest, TaskResponse2{
+			Success: false,
+			Message: "File size is too large",
+		})
+		return
+	}
 
-// }
+	if file.Filename != "" {
+		splitFile := strings.Split(file.Filename, ".")
+		if len(splitFile) < 2 {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"error": "Invalid file format",
+			})
+			return
+		}
 
-// func DeleteMovies(ctx *gin.Context) {
-// 	iddb, _ := strconv.Atoi(ctx.Param("id"))
-// 	movie := models.MovieById(iddb)
-// 	if movie == (models.Movie{}) {
-// 		ctx.JSON(http.StatusBadRequest, TaskResponse{
-// 			Success: false,
-// 			Message: "invalid delete movie",
-// 			Result:  iddb,
-// 		})
-// 		return
-// 	}
+		fileExtension := strings.ToLower(splitFile[len(splitFile)-1])
 
-// 	ctx.ShouldBind(&movie)
+		allowedExtensions := map[string]bool{
+			"jpg": true,
+			"png": true,
+		}
 
-// 	DeleteMovie := models.DeleteMovie(iddb)
+		if !allowedExtensions[fileExtension] {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"error": "Only .jpg and .png files are allowed",
+			})
+			return
+		}
 
-// 	ctx.JSON(http.StatusOK, TaskResponse{
-// 		Success: true,
-// 		Message: "Delete Movie sukses",
-// 		Result:  DeleteMovie,
-// 	})
-// }
+		filename := uuid.New().String()
+		storedFile := fmt.Sprintf("%s.%s", filename, fileExtension)
+		err := ctx.SaveUploadedFile(file, fmt.Sprintf("upload/movies/%s", storedFile))
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, TaskResponse2{
+				Success: false,
+				Message: "Failed to save file",
+			})
+			return
+		}
+
+		moviesBody.Image_movie = storedFile
+	}
+
+	updatedMovie, err := models.Update(moviesBody)
+	if err != nil {
+		log.Println(err)
+		ctx.JSON(http.StatusInternalServerError, TaskResponse2{
+			Success: false,
+			Message: "Failed to update movie",
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, TaskResponse2{
+		Success: true,
+		Message: "Movie updated successfully",
+		Result:  updatedMovie,
+	})
+}
+
+func DeleteMovies(ctx *gin.Context) {
+	iddb, _ := strconv.Atoi(ctx.Param("id"))
+	movie, _ := models.MovieById2(iddb)
+	if movie == (models.Movie{}) {
+		ctx.JSON(http.StatusBadRequest, TaskResponse2{
+			Success: false,
+			Message: "invalid delete movie",
+			Result:  iddb,
+		})
+		return
+	}
+
+	ctx.ShouldBind(&movie)
+
+	DeleteMovie := models.DeleteMovie(iddb)
+
+	ctx.JSON(http.StatusOK, TaskResponse2{
+		Success: true,
+		Message: "Delete Movie sukses",
+		Result:  DeleteMovie,
+	})
+}
 
 // func SearchMovies(ctx *gin.Context) {
 // 	var cari Movie

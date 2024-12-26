@@ -4,6 +4,7 @@ import (
 	"backend/lib"
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -27,7 +28,7 @@ type User_credentials struct {
 }
 
 type Gabung struct {
-	Id           int    `json:"id" db:"id"`
+	Id           *int   `json:"id" db:"id"`
 	Firstname    string `json:"firstname" form:"firstname" db:"firstname"`
 	Lastname     string `json:"lastname" form:"lastname" db:"lastname"`
 	Phone_number string `json:"phone_number" form:"phone_number" db:"phone_number"`
@@ -102,22 +103,6 @@ func UserById(iddb int) Gabung {
 		FROM users RIGHT JOIN user_credentials ON users.user_credentials_id = user_credentials.id WHERE users.id = $1
 	`, iddb).Scan(&id, &firstname, &lastname, &phone_number, &image, &email, &password)
 
-	// rows, err := conn.Query(context.Background(), `
-	// SELECT users.id, COALESCE(users.firstname, ''), COALESCE(users.lastname, ''), COALESCE(users.phone_number, ''), COALESCE(users.image, ''),
-	// 	COALESCE(user_credentials.email, '')
-	// 	FROM users RIGHT JOIN user_credentials ON users.user_credentials_id = user_credentials.id WHERE user_credentials.id = $1
-	// `, iddb)
-
-	// for rows.Next() {
-	// 	val, err := rows.Values()
-	// 	if err != nil {
-	// 		break
-	// 	}
-	// 	fmt.Println(val)
-	// }
-
-	// fmt.Println(id, firstname, lastname, phone_number, email)
-
 	if err != nil {
 		// ctx.JSON(http.StatusBadRequest, controllers.TaskResponse{
 		// 	Success: false,
@@ -129,7 +114,7 @@ func UserById(iddb int) Gabung {
 	}
 	// return user
 	return Gabung{
-		Id:           id,
+		Id:           &id,
 		Firstname:    firstname,
 		Lastname:     lastname,
 		Phone_number: phone_number,
@@ -183,19 +168,21 @@ func UpdateUser(user Gabung) Gabung {
 
 	var updatedUser Gabung
 
-	_, err := conn.Exec(context.Background(), `
-		UPDATE user_credentials
-		SET email = COALESCE($1, email),
-		    password = COALESCE($2, password)
-		WHERE email = $3
-	`, user.Email, user.Password, user.Email)
-	if err != nil {
-		fmt.Println("Error updating user_credentials:", err)
-		return Gabung{}
+	if user.Email != "" || user.Password != "" {
+		_, err := conn.Exec(context.Background(), `
+			UPDATE user_credentials
+			SET email = COALESCE($1, email),
+			    password = COALESCE($2, password)
+			WHERE email = $3
+		`, user.Email, user.Password, user.Email)
+		if err != nil {
+			fmt.Println("Error updating user_credentials:", err)
+			return Gabung{}
+		}
 	}
 
 	var userCredentialsId int
-	err = conn.QueryRow(context.Background(), `
+	err := conn.QueryRow(context.Background(), `
 		SELECT id FROM user_credentials WHERE email = $1
 	`, user.Email).Scan(&userCredentialsId)
 
@@ -228,29 +215,30 @@ func UpdateUser(user Gabung) Gabung {
 		}
 	}
 
-	err = conn.QueryRow(context.Background(), `
-		UPDATE users
-		SET firstname = COALESCE($1, firstname),
-		    lastname = COALESCE($2, lastname),
-		    phone_number = COALESCE($3, phone_number),
-		    image = COALESCE($4, image)
-		FROM user_credentials
-		WHERE users.user_credentials_id = $5
-		AND user_credentials.id = $5
-		RETURNING users.id, users.firstname, users.lastname, users.phone_number, users.image, user_credentials.email, user_credentials.password
-	`, user.Firstname, user.Lastname, user.Phone_number, user.Image, userCredentialsId).Scan(
-		&updatedUser.Id,
-		&updatedUser.Firstname,
-		&updatedUser.Lastname,
-		&updatedUser.Phone_number,
-		&updatedUser.Image,
-		&updatedUser.Email,
-		&updatedUser.Password,
-	)
-
-	if err != nil {
-		fmt.Println("Error updating users:", err)
-		return Gabung{}
+	if user.Firstname != "" || user.Lastname != "" || user.Phone_number != "" || user.Image != "" {
+		err = conn.QueryRow(context.Background(), `
+			UPDATE users
+			SET firstname = COALESCE($1, firstname),
+			    lastname = COALESCE($2, lastname),
+			    phone_number = COALESCE($3, phone_number),
+			    image = COALESCE($4, image)
+			FROM user_credentials
+			WHERE users.user_credentials_id = $5
+			AND user_credentials.id = $5
+			RETURNING users.id, users.firstname, users.lastname, users.phone_number, users.image, user_credentials.email, user_credentials.password
+		`, user.Firstname, user.Lastname, user.Phone_number, user.Image, userCredentialsId).Scan(
+			&updatedUser.Id,
+			&updatedUser.Firstname,
+			&updatedUser.Lastname,
+			&updatedUser.Phone_number,
+			&updatedUser.Image,
+			&updatedUser.Email,
+			&updatedUser.Password,
+		)
+		if err != nil {
+			fmt.Println("Error updating users:", err)
+			return Gabung{}
+		}
 	}
 
 	return updatedUser
@@ -282,25 +270,70 @@ func UpdateUser(user Gabung) Gabung {
 // 	return updatedUser
 // }
 
-func DeleteUser(iddb int) User {
+func DeleteUser(iddb int) (Gabung, error) {
 	conn := lib.DB()
 	defer conn.Close(context.Background())
 
-	var userDelete User
+	var userDelete Gabung
 
-	conn.QueryRow(context.Background(), `
-	DELETE FROM users WHERE id = $1
-	RETURNING  id, firstname, lastname, phone_number, image, point, created_at, updated_at
+	err := conn.QueryRow(context.Background(), `
+		SELECT 
+			users.id, 
+			users.firstname, 
+			users.lastname, 
+			users.phone_number, 
+			users.image, 
+			user_credentials.email, 
+			user_credentials.password
+		FROM 
+			users
+		JOIN 
+			user_credentials 
+		ON 
+			users.user_credentials_id = user_credentials.id
+		WHERE 
+			users.id = $1
 	`, iddb).Scan(
 		&userDelete.Id,
 		&userDelete.Firstname,
 		&userDelete.Lastname,
 		&userDelete.Phone_number,
 		&userDelete.Image,
-		// &userDelete.Email,
-		// &userDelete.Password,
-		// &userDelete.Point,
+		&userDelete.Email,
+		&userDelete.Password,
 	)
 
-	return userDelete
+	if err != nil {
+		log.Println("Error fetching user data:", err)
+		return Gabung{}, fmt.Errorf("failed to fetch user data: %w", err)
+	}
+
+	_, err = conn.Exec(context.Background(), `
+		DELETE FROM 
+			user_credentials 
+		USING 
+			users 
+		WHERE 
+			user_credentials.id = users.user_credentials_id 
+			AND users.id = $1
+	`, iddb)
+
+	if err != nil {
+		log.Println("Error deleting user credentials:", err)
+		return Gabung{}, fmt.Errorf("failed to delete user credentials: %w", err)
+	}
+
+	_, err = conn.Exec(context.Background(), `
+		DELETE FROM 
+			users 
+		WHERE 
+			id = $1
+	`, iddb)
+
+	if err != nil {
+		log.Println("Error deleting user:", err)
+		return Gabung{}, fmt.Errorf("failed to delete user: %w", err)
+	}
+
+	return userDelete, nil
 }

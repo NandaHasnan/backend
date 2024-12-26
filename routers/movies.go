@@ -14,8 +14,8 @@ func MovieRouter(router *gin.RouterGroup) {
 
 func MovieRouter2(router *gin.RouterGroup) {
 	router.Use(middleware.ValidasiToken())
-	router.POST("/", controllers.AddMovies)
+	router.POST("/addmovie", controllers.AddMovies)
 	router.POST("/order", controllers.OrderMovies)
-	// router.PATCH("/:id", controllers.EditMovies)
-	// router.DELETE("/:id", controllers.DeleteMovies)
+	router.PATCH("/:id", controllers.EditMovies)
+	router.DELETE("/:id", controllers.DeleteMovies)
 }

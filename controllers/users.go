@@ -4,6 +4,7 @@ import (
 	lib "backend/lib"
 	"backend/models"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -110,60 +111,89 @@ import (
 // }
 
 func EditUser(ctx *gin.Context) {
-	// Ambil file gambar dari request
+
 	file, err := ctx.FormFile("image")
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, TaskResponse2{
+			Success: false,
+			Message: "No file provided",
+		})
+		return
+	}
+
+	maxFile := 2 * 1024 * 1024
+	if file.Size > int64(maxFile) {
+		ctx.JSON(http.StatusBadRequest, TaskResponse2{
+			Success: false,
+			Message: "File size is too large",
+		})
+		return
+	}
+
 	var fileName string
-	if err == nil && file != nil {
-		// Simpan file jika ada
-		fileName = uuid.New().String()
+	if file.Filename != "" {
+
 		splitFile := strings.Split(file.Filename, ".")
-		fileExt := splitFile[len(splitFile)-1]
-		filePath := fmt.Sprintf("upload/movies/%s.%s", fileName, fileExt)
+		if len(splitFile) < 2 {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"error": "Invalid file format",
+			})
+			return
+		}
+
+		fileExt := strings.ToLower(splitFile[len(splitFile)-1])
+
+		allowedExtensions := map[string]bool{
+			"jpg": true,
+			"png": true,
+		}
+
+		if !allowedExtensions[fileExt] {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"error": "Only .jpg and .png files are allowed",
+			})
+			return
+		}
+
+		fileName = uuid.New().String()
+		filePath := fmt.Sprintf("upload/users/%s.%s", fileName, fileExt)
 
 		if err := ctx.SaveUploadedFile(file, filePath); err != nil {
-			ctx.JSON(http.StatusInternalServerError, TaskResponse{
+			ctx.JSON(http.StatusInternalServerError, TaskResponse2{
 				Success: false,
 				Message: "Error saving the file",
-				Result:  nil,
 			})
 			return
 		}
 	}
 
-	// Ambil data dari form-data
 	firstname := ctx.PostForm("firstname")
 	lastname := ctx.PostForm("lastname")
 	phone_number := ctx.PostForm("phone_number")
 	email := ctx.PostForm("email")
 	password := ctx.PostForm("password")
 
-	// Validasi email
 	if email == "" {
-		ctx.JSON(http.StatusBadRequest, TaskResponse{
+		ctx.JSON(http.StatusBadRequest, TaskResponse2{
 			Success: false,
 			Message: "Email is required",
-			Result:  nil,
 		})
 		return
 	}
 
-	// Periksa apakah user ada di database
 	user := models.UserByEmail(email)
 	if user == (models.User_credentials{}) {
-		ctx.JSON(http.StatusNotFound, TaskResponse{
+		ctx.JSON(http.StatusNotFound, TaskResponse2{
 			Success: false,
 			Message: "Email not found",
-			Result:  nil,
 		})
 		return
 	}
 
-	// Hash password jika ada perubahan
 	if password != "" && !strings.Contains(password, "$argon2i$v=19$m=65536,t=1,p=2$") {
 		password = lib.GenerateHash(password)
 	}
 
-	// Siapkan data untuk diperbarui
 	updatedUser := models.Gabung{
 		Firstname:    firstname,
 		Lastname:     lastname,
@@ -173,11 +203,9 @@ func EditUser(ctx *gin.Context) {
 		Password:     password,
 	}
 
-	// Update data pengguna di database
 	result := models.UpdateUser(updatedUser)
 
-	// Kirim respons berhasil
-	ctx.JSON(http.StatusOK, TaskResponse{
+	ctx.JSON(http.StatusOK, TaskResponse2{
 		Success: true,
 		Message: "User updated successfully",
 		Result:  result,
@@ -215,45 +243,78 @@ func EditUser(ctx *gin.Context) {
 
 // }
 
-// func DeleteUser(ctx *gin.Context) {
-// 	iddb, _ := strconv.Atoi(ctx.Param("id"))
-// 	user := models.UserById(iddb)
-// 	if user == (models.User{}) {
-// 		ctx.JSON(http.StatusBadRequest, TaskResponse{
+func DeleteUser(ctx *gin.Context) {
+	iddb, _ := strconv.Atoi(ctx.Param("id"))
+	user := models.UserById(iddb)
+	if user == (models.Gabung{}) {
+		ctx.JSON(http.StatusBadRequest, TaskResponse2{
+			Success: false,
+			Message: "invalid add user",
+			Result:  iddb,
+		})
+		return
+	}
+
+	// ctx.ShouldBind(&user)
+
+	DeleteUser, err := models.DeleteUser(iddb)
+	if err != nil {
+		log.Println(err)
+	}
+
+	ctx.JSON(http.StatusOK, TaskResponse2{
+		Success: true,
+		Message: "Delete User sukses",
+		Result:  DeleteUser,
+	})
+
+}
+
+// func UsersId(ctx *gin.Context) {
+// 	iddb, err := strconv.Atoi(ctx.Param("id"))
+// 	if err != nil {
+// 		ctx.JSON(http.StatusBadRequest, TaskResponse2{
 // 			Success: false,
-// 			Message: "invalid add user",
-// 			Result:  iddb,
+// 			Message: "invalid user",
 // 		})
 // 		return
 // 	}
+// 	user := models.UserById(iddb)
+// 	// if user == nil {
+// 	// 	ctx.JSON(http.StatusNotFound, TaskResponse2{
+// 	// 		Success: false,
+// 	// 		Message: "id tidak ada",
+// 	// 	})
+// 	// 	return
+// 	// }
 
-// 	// ctx.ShouldBind(&user)
-
-// 	DeleteUser := models.DeleteUser(iddb)
-
-// 	ctx.JSON(http.StatusOK, TaskResponse{
+// 	ctx.JSON(http.StatusOK, TaskResponse2{
 // 		Success: true,
-// 		Message: "Delete User sukses",
-// 		Result:  DeleteUser,
+// 		Message: "User Id",
+// 		Result:  user,
 // 	})
 
 // }
 
-func UsersId(ctx *gin.Context) {
-	iddb, _ := strconv.Atoi(ctx.Param("id"))
-	user := models.UserById(iddb)
-	ctx.JSON(http.StatusOK, TaskResponse{
-		Success: true,
-		Message: "User Id",
-		Result:  user,
-	})
+func UserProfile(ctx *gin.Context) {
+	val, isAvail := ctx.Get("userid")
+	userId := int(val.(float64))
 
+	profile := models.UserById(userId)
+
+	if isAvail {
+		ctx.JSON(http.StatusOK, TaskResponse2{
+			Success: true,
+			Message: "User Id",
+			Result:  profile,
+		})
+	}
 }
 
 func AllUsersDB(ctx *gin.Context) {
 	user := models.UserAll()
 	// fmt.Println(user)
-	ctx.JSON(http.StatusOK, TaskResponse{
+	ctx.JSON(http.StatusOK, TaskResponse2{
 		Success: true,
 		Message: "All User",
 		Result:  user,

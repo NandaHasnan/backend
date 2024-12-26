@@ -15,6 +15,12 @@ type TaskResponse struct {
 	Result   interface{} `json:"result,omitempty"`
 }
 
+type TaskResponse2 struct {
+	Success bool        `json:"success"`
+	Message string      `json:"message"`
+	Result  interface{} `json:"result,omitempty"`
+}
+
 // type UserDB struct {
 // 	Id    int    `json:"id"`
 // 	Name  string `json:"name"`
