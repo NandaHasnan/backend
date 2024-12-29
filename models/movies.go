@@ -397,7 +397,6 @@ func OrderTicket(data OrderBody) (OrderData, error) {
 	var order OrderData
 	var price int
 
-	// Fetch price from movie_cinema
 	err := conn.QueryRow(context.Background(), `
 		SELECT cinema.price 
 		FROM movie_cinema
@@ -408,7 +407,6 @@ func OrderTicket(data OrderBody) (OrderData, error) {
 		return order, fmt.Errorf("error fetching price for movie_cinema_id %d: %v", data.Movie_Cinema_Id, err)
 	}
 
-	// Calculate total price
 	totalPrice := price * data.Quantity
 	fmt.Println(data.Time)
 	fmt.Println(data.Date)
@@ -425,7 +423,6 @@ func OrderTicket(data OrderBody) (OrderData, error) {
 		return OrderData{}, err
 	}
 
-	// Insert order and get the newly created order details
 	err = conn.QueryRow(context.Background(), `
 		INSERT INTO orders (movie_cinema_id, quantity, total_price, date, time) 
 		VALUES ($1, $2, $3, $4, $5) 
@@ -442,7 +439,6 @@ func OrderTicket(data OrderBody) (OrderData, error) {
 		return order, fmt.Errorf("error inserting order: %v", err)
 	}
 
-	// Fetch additional movie and cinema details
 	err = conn.QueryRow(context.Background(), `
 		SELECT 
 			movie.title, 

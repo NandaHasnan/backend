@@ -173,8 +173,8 @@ func UpdateUser(user Gabung) Gabung {
 			UPDATE user_credentials
 			SET email = COALESCE($1, email),
 			    password = COALESCE($2, password)
-			WHERE email = $3
-		`, user.Email, user.Password, user.Email)
+			WHERE id = $3
+		`, user.Email, user.Password, user.Id)
 		if err != nil {
 			fmt.Println("Error updating user_credentials:", err)
 			return Gabung{}
@@ -183,22 +183,20 @@ func UpdateUser(user Gabung) Gabung {
 
 	var userCredentialsId int
 	err := conn.QueryRow(context.Background(), `
-		SELECT id FROM user_credentials WHERE email = $1
-	`, user.Email).Scan(&userCredentialsId)
+		SELECT id FROM user_credentials WHERE id = $1
+	`, user.Id).Scan(&userCredentialsId)
 
-	fmt.Println("Received email for user update:", user.Email)
+	fmt.Println("Received ID for user update:", user.Id)
 	if err != nil || userCredentialsId == 0 {
-		fmt.Println("Error: user_credentials not found or invalid ID for email:", user.Email)
+		fmt.Println("Error: user_credentials not found or invalid ID:", user.Id)
 		return Gabung{}
 	}
 
-	row := conn.QueryRow(context.Background(), `
+	var count int
+	err = conn.QueryRow(context.Background(), `
 		SELECT COUNT(*) FROM users
 		WHERE user_credentials_id = $1
-	`, userCredentialsId)
-
-	var count int
-	err = row.Scan(&count)
+	`, userCredentialsId).Scan(&count)
 	if err != nil {
 		fmt.Println("Error checking users table:", err)
 		return Gabung{}
@@ -215,7 +213,7 @@ func UpdateUser(user Gabung) Gabung {
 		}
 	}
 
-	if user.Firstname != "" || user.Lastname != "" || user.Phone_number != "" || user.Image != "" {
+	if user.Firstname != "" || user.Lastname != "" || user.Phone_number != "" || user.Image != "" || user.Email != "" {
 		err = conn.QueryRow(context.Background(), `
 			UPDATE users
 			SET firstname = COALESCE($1, firstname),

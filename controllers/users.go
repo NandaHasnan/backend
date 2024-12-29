@@ -111,6 +111,16 @@ import (
 // }
 
 func EditUser(ctx *gin.Context) {
+	val, isAvail := ctx.Get("userid")
+	if !isAvail {
+		ctx.JSON(http.StatusUnauthorized, TaskResponse2{
+			Success: false,
+			Message: "Unauthorized",
+		})
+		return
+	}
+
+	userId := int(val.(float64))
 
 	file, err := ctx.FormFile("image")
 	if err != nil {
@@ -132,7 +142,6 @@ func EditUser(ctx *gin.Context) {
 
 	var fileName string
 	if file.Filename != "" {
-
 		splitFile := strings.Split(file.Filename, ".")
 		if len(splitFile) < 2 {
 			ctx.JSON(http.StatusBadRequest, gin.H{
@@ -173,28 +182,12 @@ func EditUser(ctx *gin.Context) {
 	email := ctx.PostForm("email")
 	password := ctx.PostForm("password")
 
-	if email == "" {
-		ctx.JSON(http.StatusBadRequest, TaskResponse2{
-			Success: false,
-			Message: "Email is required",
-		})
-		return
-	}
-
-	user := models.UserByEmail(email)
-	if user == (models.User_credentials{}) {
-		ctx.JSON(http.StatusNotFound, TaskResponse2{
-			Success: false,
-			Message: "Email not found",
-		})
-		return
-	}
-
 	if password != "" && !strings.Contains(password, "$argon2i$v=19$m=65536,t=1,p=2$") {
 		password = lib.GenerateHash(password)
 	}
 
 	updatedUser := models.Gabung{
+		Id:           &userId,
 		Firstname:    firstname,
 		Lastname:     lastname,
 		Phone_number: phone_number,
@@ -214,28 +207,93 @@ func EditUser(ctx *gin.Context) {
 
 // func EditUser(ctx *gin.Context) {
 
-// 	iddb, _ := strconv.Atoi(ctx.Param("id"))
-// 	user := models.UserById(iddb)
-// 	if user == (models.Gabung{}) {
-// 		ctx.JSON(http.StatusBadRequest, TaskResponse{
+// 	// iddb, _ := strconv.Atoi(ctx.Param("id"))
+// 	// user := models.UserById(iddb)
+// 	// if user == (models.Gabung{}) {
+// 	// 	ctx.JSON(http.StatusBadRequest, TaskResponse{
+// 	// 		Success: false,
+// 	// 		Message: "invalid add user",
+// 	// 		Result:  iddb,
+// 	// 	})
+// 	// 	return
+// 	// }
+
+// 	// ctx.ShouldBind(&user)
+
+// 	val, isAvail := ctx.Get("userid")
+// 	if !isAvail {
+// 		ctx.JSON(http.StatusUnauthorized, TaskResponse2{
 // 			Success: false,
-// 			Message: "invalid add user",
-// 			Result:  iddb,
+// 			Message: "Unauthorized",
+// 		})
+// 		return
+// 	}
+// 	userId := models.UserById(int(val.(float64)))
+
+// 	file, err := ctx.FormFile("image")
+// 	if err != nil {
+// 		ctx.JSON(http.StatusBadRequest, TaskResponse2{
+// 			Success: false,
+// 			Message: "No file provided",
 // 		})
 // 		return
 // 	}
 
-// 	ctx.ShouldBind(&user)
+// 	maxFile := 2 * 1024 * 1024
+// 	if file.Size > int64(maxFile) {
+// 		ctx.JSON(http.StatusBadRequest, TaskResponse2{
+// 			Success: false,
+// 			Message: "File size is too large",
+// 		})
+// 		return
+// 	}
 
-// 	if !strings.Contains(user.Password, "$argon2i$v=19$m=65536,t=1,p=2$") {
-// 		if user.Password != "" {
-// 			user.Password = lib.GenerateHash(user.Password)
+// 	var fileName string
+// 	if file.Filename != "" {
+
+// 		splitFile := strings.Split(file.Filename, ".")
+// 		if len(splitFile) < 2 {
+// 			ctx.JSON(http.StatusBadRequest, gin.H{
+// 				"error": "Invalid file format",
+// 			})
+// 			return
+// 		}
+
+// 		fileExt := strings.ToLower(splitFile[len(splitFile)-1])
+
+// 		allowedExtensions := map[string]bool{
+// 			"jpg": true,
+// 			"png": true,
+// 		}
+
+// 		if !allowedExtensions[fileExt] {
+// 			ctx.JSON(http.StatusBadRequest, gin.H{
+// 				"error": "Only .jpg and .png files are allowed",
+// 			})
+// 			return
+// 		}
+
+// 		fileName = uuid.New().String()
+// 		filePath := fmt.Sprintf("upload/users/%s.%s", fileName, fileExt)
+
+// 		if err := ctx.SaveUploadedFile(file, filePath); err != nil {
+// 			ctx.JSON(http.StatusInternalServerError, TaskResponse2{
+// 				Success: false,
+// 				Message: "Error saving the file",
+// 			})
+// 			return
 // 		}
 // 	}
 
-// 	UpdateUser := models.UpdateUser(user)
+// 	if !strings.Contains(userId.Password, "$argon2i$v=19$m=65536,t=1,p=2$") {
+// 		if userId.Password != "" {
+// 			userId.Password = lib.GenerateHash(userId.Password)
+// 		}
+// 	}
 
-// 	ctx.JSON(http.StatusOK, TaskResponse{
+// 	UpdateUser := models.UpdateUser(userId)
+
+// 	ctx.JSON(http.StatusOK, TaskResponse2{
 // 		Success: true,
 // 		Message: "Update User sukses",
 // 		Result:  UpdateUser,
