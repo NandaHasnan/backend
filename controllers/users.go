@@ -110,6 +110,127 @@ import (
 
 // }
 
+// Users godoc
+// @Schemes
+// @Description Add New Users
+// @Tags Users
+// @Accept mpfd
+// @Produce json
+// @param email formData string false "Email"
+// @param password formData string false "password"
+// @param firstname formData string false "Firstname"
+// @param lastname formData string false "Lastname"
+// @param phone_number formData string false "Phone Number"
+// @param image formData file false "Image"
+// @Success 200 {object} TaskResponse2{result=models.Gabung}
+// @Security ApiKeyAuth
+// @Router /users/add_User [post]
+func InsertUser(ctx *gin.Context) {
+
+	file, err := ctx.FormFile("image")
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, TaskResponse2{
+			Success: false,
+			Message: "No file provided",
+		})
+		return
+	}
+
+	maxFile := 2 * 1024 * 1024
+	if file.Size > int64(maxFile) {
+		ctx.JSON(http.StatusBadRequest, TaskResponse2{
+			Success: false,
+			Message: "File size is too large",
+		})
+		return
+	}
+
+	var fileName string
+	if file.Filename != "" {
+
+		splitFile := strings.Split(file.Filename, ".")
+		if len(splitFile) < 2 {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"error": "Invalid file format",
+			})
+			return
+		}
+
+		fileExt := strings.ToLower(splitFile[len(splitFile)-1])
+		allowedExtensions := map[string]bool{
+			"jpg": true,
+			"png": true,
+		}
+
+		if !allowedExtensions[fileExt] {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"error": "Only .jpg and .png files are allowed",
+			})
+			return
+		}
+
+		fileName = uuid.New().String()
+		filePath := fmt.Sprintf("upload/users/%s.%s", fileName, fileExt)
+
+		if err := ctx.SaveUploadedFile(file, filePath); err != nil {
+			ctx.JSON(http.StatusInternalServerError, TaskResponse2{
+				Success: false,
+				Message: "Error saving the file",
+			})
+			return
+		}
+	}
+
+	firstname := ctx.PostForm("firstname")
+	lastname := ctx.PostForm("lastname")
+	phone_number := ctx.PostForm("phone_number")
+	email := ctx.PostForm("email")
+	password := ctx.PostForm("password")
+
+	if password != "" {
+		password = lib.GenerateHash(password)
+	}
+
+	newUser := models.Gabung{
+		Firstname:    firstname,
+		Lastname:     lastname,
+		Phone_number: phone_number,
+		Image:        fileName + "." + strings.Split(file.Filename, ".")[1],
+		Email:        email,
+		Password:     password,
+	}
+
+	result, err := models.AddUser(newUser)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, TaskResponse2{
+			Success: false,
+			Message: "Error adding user",
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, TaskResponse2{
+		Success: true,
+		Message: "User added successfully",
+		Result:  result,
+	})
+}
+
+// Users godoc
+// @Schemes
+// @Description Edit Profile Users
+// @Tags Profile
+// @Accept mpfd
+// @Produce json
+// @param firstname formData string false "Firstname"
+// @param lastname formData string false "Lastname"
+// @param phone_number formData string false "Phone Number"
+// @param image formData file false "Image"
+// @param email formData string false "Email"
+// @param password formData string false "password"
+// @Success 200 {object} TaskResponse2{result=models.Gabung}
+// @Security ApiKeyAuth
+// @Router /users [patch]
 func EditUser(ctx *gin.Context) {
 	val, isAvail := ctx.Get("userid")
 	if !isAvail {
@@ -196,7 +317,173 @@ func EditUser(ctx *gin.Context) {
 		Password:     password,
 	}
 
-	result := models.UpdateUser(updatedUser)
+	// err = ctx.ShouldBind(&updatedUser)
+	// if err != nil {
+	// 	if strings.Contains(err.Error(), "Key: 'Gabung.Email' Error:Field validation for 'Email' failed on the 'email' tag") {
+	// 		ctx.JSON(http.StatusBadRequest, TaskResponse2{
+	// 			Success: false,
+	// 			Message: "invalid email format",
+	// 			Result:  nil,
+	// 		})
+	// 		return
+	// 	}
+
+	// 	if strings.Contains(err.Error(), "Key: 'Gabung.Password' Error:Field validation for 'Password' failed") {
+	// 		ctx.JSON(http.StatusBadRequest, TaskResponse2{
+	// 			Success: false,
+	// 			Message: "invalid password",
+	// 			Result:  nil,
+	// 		})
+	// 		return
+	// 	}
+	// }
+
+	result, _ := models.UpdateUser(updatedUser)
+
+	ctx.JSON(http.StatusOK, TaskResponse2{
+		Success: true,
+		Message: "User updated successfully",
+		Result:  result,
+	})
+}
+
+// Users godoc
+// @Schemes
+// @Description Edit Profile Users
+// @Tags Users
+// @Accept mpfd
+// @Produce json
+// @Param id path int true "Edit User"
+// @param firstname formData string false "Firstname"
+// @param lastname formData string false "Lastname"
+// @param phone_number formData string false "Phone Number"
+// @param image formData file false "Image"
+// @param email formData string false "Email"
+// @param password formData string false "password"
+// @Success 200 {object} TaskResponse2{result=models.Gabung}
+// @Security ApiKeyAuth
+// @Router /users/{id} [patch]
+func EditUserAdmin(ctx *gin.Context) {
+	// val, isAvail := ctx.Get("userid")
+	// if !isAvail {
+	// 	ctx.JSON(http.StatusUnauthorized, TaskResponse2{
+	// 		Success: false,
+	// 		Message: "Unauthorized",
+	// 	})
+	// 	return
+	// }
+
+	// userId := int(val.(float64))
+
+	iddb, _ := strconv.Atoi(ctx.Param("id"))
+	user := models.UserById(iddb)
+	if user == (models.Gabung{}) {
+		ctx.JSON(http.StatusBadRequest, TaskResponse2{
+			Success: false,
+			Message: "invalid add user",
+			Result:  iddb,
+		})
+		return
+	}
+
+	ctx.ShouldBind(&user)
+
+	file, err := ctx.FormFile("image")
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, TaskResponse2{
+			Success: false,
+			Message: "No file provided",
+		})
+		return
+	}
+
+	maxFile := 2 * 1024 * 1024
+	if file.Size > int64(maxFile) {
+		ctx.JSON(http.StatusBadRequest, TaskResponse2{
+			Success: false,
+			Message: "File size is too large, max 2 mb",
+		})
+		return
+	}
+
+	var fileName string
+	if file.Filename != "" {
+		splitFile := strings.Split(file.Filename, ".")
+		if len(splitFile) < 2 {
+			ctx.JSON(http.StatusBadRequest, TaskResponse2{
+				Success: false,
+				Message: "Invalid file format",
+			})
+			return
+		}
+
+		fileExt := strings.ToLower(splitFile[len(splitFile)-1])
+
+		allowedExtensions := map[string]bool{
+			"jpg": true,
+			"png": true,
+		}
+
+		if !allowedExtensions[fileExt] {
+			ctx.JSON(http.StatusBadRequest, TaskResponse2{
+				Success: false,
+				Message: "Only .jpg and .png files are allowed",
+			})
+			return
+		}
+
+		fileName = uuid.New().String()
+		filePath := fmt.Sprintf("upload/users/%s.%s", fileName, fileExt)
+
+		if err := ctx.SaveUploadedFile(file, filePath); err != nil {
+			ctx.JSON(http.StatusInternalServerError, TaskResponse2{
+				Success: false,
+				Message: "Error saving the file",
+			})
+			return
+		}
+	}
+
+	firstname := ctx.PostForm("firstname")
+	lastname := ctx.PostForm("lastname")
+	phone_number := ctx.PostForm("phone_number")
+	email := ctx.PostForm("email")
+	password := ctx.PostForm("password")
+
+	if password != "" && !strings.Contains(password, "$argon2i$v=19$m=65536,t=1,p=2$") {
+		password = lib.GenerateHash(password)
+	}
+
+	updatedUser := models.Gabung{
+		Id:           &iddb,
+		Firstname:    firstname,
+		Lastname:     lastname,
+		Phone_number: phone_number,
+		Image:        fileName + "." + strings.Split(file.Filename, ".")[1],
+		Email:        email,
+		Password:     password,
+	}
+
+	result, err := models.UpdateUser(updatedUser)
+	if err != nil {
+		if strings.Contains(err.Error(), "Key: 'User_credentials.Email' Error:Field validation for 'Email' failed on the 'email' tag") {
+			ctx.JSON(http.StatusBadRequest, TaskResponse2{
+				Success: false,
+				Message: "invalid email format",
+				Result:  nil,
+			})
+			return
+		}
+
+		if strings.Contains(err.Error(), "Key: 'User_credentials.Password' Error:Field validation for 'Password' failed") {
+			ctx.JSON(http.StatusBadRequest, TaskResponse2{
+				Success: false,
+				Message: "invalid password",
+				Result:  nil,
+			})
+			return
+		}
+	}
 
 	ctx.JSON(http.StatusOK, TaskResponse2{
 		Success: true,
@@ -301,7 +588,58 @@ func EditUser(ctx *gin.Context) {
 
 // }
 
+// Users godoc
+// @Schemes
+// @Description Delete User
+// @Tags Profile
+// @Accept json
+// @Produce json
+// @Success 200 {object} TaskResponse2{result=models.Gabung}
+// @Security ApiKeyAuth
+// @Router /users [delete]
 func DeleteUser(ctx *gin.Context) {
+	// iddb, _ := strconv.Atoi(ctx.Param("id"))
+	// user := models.UserById(iddb)
+	// if user == (models.Gabung{}) {
+	// 	ctx.JSON(http.StatusBadRequest, TaskResponse2{
+	// 		Success: false,
+	// 		Message: "invalid add user",
+	// 		Result:  iddb,
+	// 	})
+	// 	return
+	// }
+
+	val, isAvail := ctx.Get("userid")
+	userId := int(val.(float64))
+
+	// ctx.ShouldBind(&user)
+
+	DeleteUser, err := models.DeleteUser(userId)
+	if err != nil {
+		log.Println(err)
+	}
+
+	if isAvail {
+		ctx.JSON(http.StatusOK, TaskResponse2{
+			Success: true,
+			Message: "Delete User sukses",
+			Result:  DeleteUser,
+		})
+	}
+
+}
+
+// Users godoc
+// @Schemes
+// @Description Delete User
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Param id path int true "Delete User"
+// @Success 200 {object} TaskResponse2{result=models.Gabung}
+// @Security ApiKeyAuth
+// @Router /users/{id} [delete]
+func DeleteUserAdmin(ctx *gin.Context) {
 	iddb, _ := strconv.Atoi(ctx.Param("id"))
 	user := models.UserById(iddb)
 	if user == (models.Gabung{}) {
@@ -313,18 +651,23 @@ func DeleteUser(ctx *gin.Context) {
 		return
 	}
 
-	// ctx.ShouldBind(&user)
+	// val, isAvail := ctx.Get("userid")
+	// userId := int(val.(float64))
+
+	ctx.ShouldBind(&user)
 
 	DeleteUser, err := models.DeleteUser(iddb)
 	if err != nil {
 		log.Println(err)
 	}
 
+	// if isAvail {
 	ctx.JSON(http.StatusOK, TaskResponse2{
 		Success: true,
 		Message: "Delete User sukses",
 		Result:  DeleteUser,
 	})
+	// }
 
 }
 
@@ -354,21 +697,30 @@ func DeleteUser(ctx *gin.Context) {
 
 // }
 
-func UserProfile(ctx *gin.Context) {
-	val, isAvail := ctx.Get("userid")
-	userId := int(val.(float64))
+// func UserProfile(ctx *gin.Context) {
+// 	val, isAvail := ctx.Get("userid")
+// 	userId := int(val.(float64))
 
-	profile := models.UserById(userId)
+// 	profile := models.UserById(userId)
 
-	if isAvail {
-		ctx.JSON(http.StatusOK, TaskResponse2{
-			Success: true,
-			Message: "User Id",
-			Result:  profile,
-		})
-	}
-}
+// 	if isAvail {
+// 		ctx.JSON(http.StatusOK, TaskResponse2{
+// 			Success: true,
+// 			Message: "User Id",
+// 			Result:  profile,
+// 		})
+// 	}
+// }
 
+// Users godoc
+// @Schemes
+// @Description Get All Users
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Success 200 {object} TaskResponse2{result=models.ListUsersGabung}
+// @Security ApiKeyAuth
+// @Router /users [get]
 func AllUsersDB(ctx *gin.Context) {
 	user := models.UserAll()
 	// fmt.Println(user)

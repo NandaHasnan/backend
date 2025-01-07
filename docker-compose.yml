@@ -1,0 +1,75 @@
+services:
+  backend-app-1:
+    build: .
+    ports:
+      - "8888:8888"
+    restart: always
+    networks:
+      webservices:
+       ipv4_address: 101.10.11.150
+    volumes:
+      - file-backend:/app/upload
+    command: /bin/sh -c "tail -f /dev/null"
+  
+  backend-app-2:
+    build: .
+    ports:
+      - "8888:8888"
+    restart: always
+    networks:
+      webservices:
+       ipv4_address: 101.10.11.155
+    volumes:
+      - file-backend:/app/upload
+    command: /bin/sh -c "tail -f /dev/null"
+  
+  backend-app-3:
+    build: .
+    ports:
+      - "8888:8888"
+    restart: always
+    networks:
+      webservices:
+       ipv4_address: 101.10.11.160
+    volumes:
+      - file-backend:/app/upload
+    command: /bin/sh -c "tail -f /dev/null"
+    
+  db:
+    image: postgres
+    environment:
+      - POSTGRES_DB=faztix
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=1
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./base.sql:/docker-entrypoint-initdb.d/base.sql:ro
+    restart: always
+    networks:
+      webservices:
+       ipv4_address: 101.10.11.100
+volumes:
+  file-backend: 
+  # redis:
+  #   image: redis
+  #   environment:
+  #     - POSTGRES_DB=faztix
+  #     - POSTGRES_USER=postgres
+  #     - POSTGRES_PASSWORD=1
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis_data:/data
+  #   restart: always
+  #   networks:
+  #     webservices:
+  #      ipv4_address: 101.10.11.101
+networks:
+   webservices:
+     ipam:
+       driver: default
+       config:
+           - subnet: 101.10.0.0/16
+             ip_range: 101.10.11.0/24
+

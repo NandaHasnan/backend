@@ -208,11 +208,20 @@ type Movie struct {
 // 	Result:  Data,
 // })
 
+// Movie godoc
+// @Schemes Detail Movies
+// @Description Get Detail Movie
+// @Tags Movie
+// @Accept json
+// @Produce json
+// @param id path int true "Detail Movies"
+// @Success 200 {object} TaskResponse2{results=models.Movie_cinema}
+// @Router /movies/{id} [get]
 func IdMovies(ctx *gin.Context) {
 
 	iddb, _ := strconv.Atoi(ctx.Param("id"))
 	movie := models.MovieById(iddb)
-	ctx.JSON(http.StatusOK, TaskResponse{
+	ctx.JSON(http.StatusOK, TaskResponse2{
 		Success: true,
 		Message: "Detail Movie",
 		Result:  movie,
@@ -220,101 +229,28 @@ func IdMovies(ctx *gin.Context) {
 
 }
 
+// Movie godoc
+// @Schemes
+// @Description Create New Movie
+// @Tags Movie
+// @Accept mpfd
+// @Produce json
+// @param title formData string true "Title"
+// @param image_movie formData file true "Image Movies"
+// @param genre formData string true "Genre"
+// @param release_date formData string true "Release Date"
+// @param duration formData string true "Duration"
+// @param director formData string true "Director"
+// @param cast_actor formData string true "Cst Actor"
+// @param synopsis formData string true "Synopsis"
+// @Success 200 {object} TaskResponse2{result=models.Movie_body}
+// @Security ApiKeyAuth
+// @Router /movies/addmovie [post]
 func AddMovies(ctx *gin.Context) {
 
 	var newMovie models.Movie_body
 	ctx.ShouldBind(&newMovie)
 	// f, _ := ctx.MultipartForm()
-	h, _ := ctx.MultipartForm()
-	file, _ := ctx.FormFile("image_movie")
-	maxFile := 2 * 1024 * 1024
-	if file.Size > int64(maxFile) {
-		ctx.JSON(http.StatusBadRequest, TaskResponse{
-			Success: false,
-			Message: "File size is large",
-		})
-		return
-	}
-	log.Println(newMovie)
-
-	// newMovie.Release_date = f.Value["duration"][0]
-	newMovie.Release_date = h.Value["release_date"][0]
-
-	if file.Filename != "" {
-		filename := uuid.New().String()
-		splitFile := strings.Split(file.Filename, ".")
-		filex := splitFile[len(splitFile)-1]
-		// if filex != ".jpg" && filex != ".png" {
-		// 	ctx.JSON(http.StatusBadRequest, gin.H{"error": "Only .jpg and .png files are allowed"})
-		// 	return
-		// }
-		filestored := fmt.Sprintf("%s.%s", filename, filex)
-		ctx.SaveUploadedFile(file, fmt.Sprintf("upload/movies/%s", filestored))
-		newMovie.Image_movie = filestored
-	}
-	movie, err := models.InsertMovie(newMovie)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	ctx.JSON(http.StatusOK, task{
-		Success: true,
-		Message: "add movie sukses",
-		Result:  movie,
-	})
-
-}
-
-func OrderMovies(ctx *gin.Context) {
-
-	var orderMovie models.OrderBody
-	err := ctx.ShouldBind(&orderMovie)
-
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	order, err := models.OrderTicket(orderMovie)
-
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	ctx.JSON(http.StatusOK, task{
-		Success: true,
-		Message: "Order tiket sukses",
-		Result:  order,
-	})
-
-}
-
-func EditMovies(ctx *gin.Context) {
-	iddb, _ := strconv.Atoi(ctx.Param("id"))
-	_, err := models.MovieById2(iddb)
-
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, TaskResponse2{
-			Success: false,
-			Message: err.Error(),
-		})
-		return
-	}
-
-	var moviesBody models.Movie_body
-
-	if err := ctx.ShouldBind(&moviesBody); err != nil {
-		ctx.JSON(http.StatusBadRequest, TaskResponse2{
-			Success: false,
-			Message: "Invalid input data",
-		})
-		return
-	}
-
-	moviesBody.Id = iddb
-
 	file, err := ctx.FormFile("image_movie")
 
 	if err != nil {
@@ -369,15 +305,161 @@ func EditMovies(ctx *gin.Context) {
 			return
 		}
 
+		newMovie.Image_movie = storedFile
+	}
+
+	movie, err := models.InsertMovie(newMovie)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, task{
+			Success: false,
+			Message: err.Error(),
+			Result:  nil,
+		})
+		fmt.Println(err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, task{
+		Success: true,
+		Message: "add movie sukses",
+		Result:  movie,
+	})
+
+}
+
+// func OrderMovies(ctx *gin.Context) {
+
+// 	var orderMovie models.OrderBody
+// 	err := ctx.ShouldBind(&orderMovie)
+
+// 	if err != nil {
+// 		fmt.Println(err)
+// 		return
+// 	}
+
+// 	order, err := models.OrderTicket(orderMovie)
+
+// 	if err != nil {
+// 		fmt.Println(err)
+// 		return
+// 	}
+
+// 	ctx.JSON(http.StatusOK, task{
+// 		Success: true,
+// 		Message: "Order tiket sukses",
+// 		Result:  order,
+// 	})
+
+// }
+
+// Movie godoc
+// @Schemes
+// @Description Update Movie
+// @Tags Movie
+// @Accept mpfd
+// @Produce json
+// @param id path int true "Id Movies"
+// @param title formData string true "Title"
+// @param image_movie formData file true "Image Movies"
+// @param genre formData string true "Genre"
+// @param release_date formData string true "Release Date"
+// @param duration formData string true "Duration"
+// @param director formData string true "Director"
+// @param cast_actor formData string true "Cst Actor"
+// @param synopsis formData string true "Synopsis"
+// @Success 200 {object} TaskResponse2{result=models.Movie_body}
+// @Security ApiKeyAuth
+// @Router /movies/{id} [patch]
+func EditMovies(ctx *gin.Context) {
+	iddb, _ := strconv.Atoi(ctx.Param("id"))
+	_, err := models.MovieById2(iddb)
+
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, TaskResponse2{
+			Success: false,
+			Message: err.Error(),
+		})
+		return
+	}
+
+	var moviesBody models.Movie_body
+
+	if err := ctx.ShouldBind(&moviesBody); err != nil {
+		ctx.JSON(http.StatusBadRequest, TaskResponse2{
+			Success: false,
+			Message: "Invalid input data",
+		})
+		return
+	}
+
+	moviesBody.Id = iddb
+
+	file, err := ctx.FormFile("image_movie")
+
+	if err != nil {
+		log.Println(err.Error())
+		ctx.JSON(http.StatusBadRequest, TaskResponse2{
+			Success: false,
+			Message: "No file provided",
+		})
+		return
+	}
+
+	maxFile := 2 * 1024 * 1024
+	if file.Size > int64(maxFile) {
+		ctx.JSON(http.StatusBadRequest, TaskResponse2{
+			Success: false,
+			Message: "File size is too large, max 2 mb",
+		})
+		return
+	}
+
+	if file.Filename != "" {
+		splitFile := strings.Split(file.Filename, ".")
+		if len(splitFile) < 2 {
+			ctx.JSON(http.StatusBadRequest, TaskResponse2{
+				Success: false,
+				Message: "Invalid file format",
+			})
+			return
+		}
+
+		fileExtension := strings.ToLower(splitFile[len(splitFile)-1])
+
+		allowedExtensions := map[string]bool{
+			"jpg": true,
+			"png": true,
+		}
+
+		if !allowedExtensions[fileExtension] {
+			ctx.JSON(http.StatusBadRequest, TaskResponse2{
+				Success: false,
+				Message: "Only .jpg and .png files are allowed",
+			})
+			return
+		}
+
+		filename := uuid.New().String()
+		storedFile := fmt.Sprintf("%s.%s", filename, fileExtension)
+		err := ctx.SaveUploadedFile(file, fmt.Sprintf("upload/movies/%s", storedFile))
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, TaskResponse2{
+				Success: false,
+				Message: "Failed to save file",
+			})
+			return
+		}
+
 		moviesBody.Image_movie = storedFile
 	}
 
 	updatedMovie, err := models.Update(moviesBody)
 	if err != nil {
 		log.Println(err)
-		ctx.JSON(http.StatusInternalServerError, TaskResponse2{
+		ctx.JSON(http.StatusBadRequest, TaskResponse2{
 			Success: false,
-			Message: "Failed to update movie",
+			Message: err.Error(),
+			Result:  nil,
 		})
 		return
 	}
@@ -389,6 +471,16 @@ func EditMovies(ctx *gin.Context) {
 	})
 }
 
+// Movie godoc
+// @Schemes
+// @Description Delete Movie
+// @Tags Movie
+// @Accept json
+// @Produce json
+// @param id path int true "Id Movies"
+// @Success 200 {object} TaskResponse2{result=models.Movie}
+// @Security ApiKeyAuth
+// @Router /movies/{id} [delete]
 func DeleteMovies(ctx *gin.Context) {
 	iddb, _ := strconv.Atoi(ctx.Param("id"))
 	movie, _ := models.MovieById2(iddb)
@@ -496,9 +588,24 @@ func DeleteMovies(ctx *gin.Context) {
 // 	})
 // }
 
+// Movie godoc
+// @Schemes
+// @Description Get All Movie
+// @Tags Movie
+// @Accept json
+// @Produce json
+// @param search query string false "Search Movies"
+// @param page query int false "Page Movies"
+// @param limit query int false "Limit Movies"
+// @param sort query string false "Sort Movies"
+// @Success 200 {object} TaskResponse{result=models.Allmovie}
+// @Router /movies [get]
 func AllMovieDB(ctx *gin.Context) {
 	pageParams, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
-	limitParams, _ := strconv.Atoi(ctx.DefaultQuery("limit", "5"))
+	limitParams, err := strconv.Atoi(ctx.DefaultQuery("limit", "5"))
+	if err != nil {
+		log.Println(err)
+	}
 	search := ctx.DefaultQuery("search", "")
 	sort := ctx.DefaultQuery("sort", "ASC")
 
@@ -563,105 +670,3 @@ func AllMovieDB(ctx *gin.Context) {
 	})
 
 }
-
-// (57, 1)
-// (12, 2)
-// (85, 3)
-// (23, 4)
-// (78, 5)
-// (40, 6)
-// (7, 1)
-// (99, 2)
-// (36, 3)
-// (48, 4)
-// (65, 5)
-// (9, 6)
-// (18, 2)
-// (80, 3)
-// (92, 1)
-// (50, 5)
-// (31, 2)
-// (67, 3)
-// (14, 2)
-// (100, 2)
-// (21, 1)
-// (74, 6)
-// (42, 4)
-// (88, 5)
-// (96, 4)
-// (5, 3)
-// (83, 2)
-// (33, 2)
-// (61, 2)
-// (25, 3)
-// (44, 5)
-// (8, 6)
-// (101, 2)
-// (71, 4)
-// (3, 5)
-// (90, 4)
-// (55, 3)
-// (39, 3)
-// (76, 3)
-// (19, 2)
-// (63, 2)
-// (1, 3)
-// (11, 3)
-// (53, 5)
-// (27, 3)
-// (87, 4)
-// (20, 4)
-// (97, 4)
-// (69, 3)
-// (32, 2)
-// (4, 2)
-// (95, 1)
-// (46, 5)
-// (81, 2)
-// (15, 5)
-// (59, 3)
-// (98, 2)
-// (6, 2)
-// (73, 2)
-// (28, 2)
-// (41, 4)
-// (30, 4)
-// (84, 4)
-// (62, 5)
-// (89, 3)
-// (38, 2)
-// (13, 1)
-// (64, 1)
-// (75, 5)
-// (2, 5)
-// (91, 3)
-// (45, 2)
-// (17, 1)
-// (35, 3)
-// (47, 5)
-// (86, 6)
-// (24, 3)
-// (58, 6)
-// (49, 6)
-// (26, 5)
-// (68, 3)
-// (10, 5)
-// (34, 3)
-// (82, 2)
-// (70, 5)
-// (22, 6)
-// (94, 4)
-// (29, 3)
-// (43, 2)
-// (60, 2)
-// (37, 5)
-// (77, 6)
-// (16, 5)
-// (66, 4)
-// (56, 2)
-// (93, 4)
-// (52, 4)
-// (54, 4)
-// (79, 4)
-// (72, 4)
-// (51, 5)

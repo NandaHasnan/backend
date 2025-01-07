@@ -11,22 +11,22 @@ import (
 )
 
 type Allmovie struct {
-	Id          int    `json:"id" db:"id"`
-	Title       string `json:"title" form:"title" db:"title"`
-	Image_movie string `json:"image_movie" form:"image_movie" db:"image_movie"`
-	Genre       string `json:"genre" form:"genre" db:"genre"`
+	Id          int    `json:"id" db:"id" example:"1"`
+	Title       string `json:"title" form:"title" db:"title" example:"Spiderman"`
+	Image_movie string `json:"image_movie" form:"image_movie" db:"image_movie" example:"b00db012-1a27-43b3-895a-abd3f540362e.jpg"`
+	Genre       string `json:"genre" form:"genre" db:"genre" example:"Action, Advanture"`
 }
 
 type Movie struct {
-	Id           int       `json:"id" db:"id"`
-	Title        string    `json:"title" form:"title" db:"title"`
-	Image_movie  string    `db:"image_movie"`
-	Genre        string    `json:"genre" form:"genre" db:"genre"`
-	Release_date time.Time `db:"release_date"`
-	Duration     string    `db:"duration"`
-	Director     string    `json:"director" form:"director" db:"director"`
-	Cast_actor   string    `json:"cast_actor" form:"cast_actor" db:"cast_actor"`
-	Synopsis     string    `json:"synopsis" form:"synopsis" db:"synopsis"`
+	Id           int       `json:"id" db:"id" example:"1"`
+	Title        string    `json:"title" form:"title" db:"title" example:"Spiderman"`
+	Image_movie  string    `db:"image_movie" example:"b00db012-1a27-43b3-895a-abd3f540362e.jpg"`
+	Genre        string    `json:"genre" form:"genre" db:"genre" example:"Action, Advanture"`
+	Release_date time.Time `db:"release_date" example:"2006-01-02"`
+	Duration     string    `db:"duration" example:"22:10:33"`
+	Director     string    `json:"director" form:"director" db:"director" example:"joko anwar"`
+	Cast_actor   string    `json:"cast_actor" form:"cast_actor" db:"cast_actor" example:"warsito"`
+	Synopsis     string    `json:"synopsis" form:"synopsis" db:"synopsis" example:"Lorem ipsum dolor sit amet"`
 	// CreateAt     time.Time  `json:"createdAt" db:"created_at"`
 	// UpdateAt     *time.Time `json:"updatedAt" db:"updated_at"`
 	// Description string     `json:"description" form:"description"`
@@ -38,8 +38,8 @@ type Movie_body struct {
 	// Title        string `json:"title" form:"title"`
 	// Image_movie  string `json:"image_movie" form:"image_movie" `
 	// Genre        string `json:"genre" form:"genre" `
-	Release_date string `json:"release_date" form:"release_date"`
-	Duration     string `json:"duration" form:"duration" `
+	Release_date string `json:"release_date" form:"release_date" example:"2006-01-02"`
+	Duration     string `json:"duration" form:"duration" example:"22:10:33"`
 	// Director     string `json:"director" form:"director" `
 	// Cast_actor   string `json:"cast_actor" form:"cast_actor" `
 	// Synopsis     string `json:"synopsis" form:"synopsis" `
@@ -52,38 +52,44 @@ type Movie_Data struct {
 }
 
 type Movie_cinema struct {
-	Id           int       `json:"id" db:"id"`
-	Title        string    `json:"title" form:"title" db:"title"`
-	Image_movie  string    `json:"image_movie" form:"image_movie" db:"image_movie"`
-	Genre        string    `json:"genre" form:"genre" db:"genre"`
-	Release_date time.Time `json:"release_date" form:"release_date" db:"release_date"`
-	Duration     string    `json:"duration" form:"duration" db:"duration"`
-	Director     string    `json:"director" form:"director" db:"director"`
-	Cast_actor   string    `json:"cast_actor" form:"cast_actor" db:"cast_actor"`
-	Synopsis     string    `json:"synopsis" form:"synopsis" db:"synopsis"`
-	Cinema_name  string    `json:"cinema_name" form:"cinema_name" db:"cinema_name"`
-	Price        int       `json:"price" form:"price" db:"price"`
-	Location     string    `json:"location" form:"location" db:"location"`
-	Date         time.Time `json:"date" form:"date" db:"date"`
-	Time         string    `json:"time" form:"time" db:"time"`
+	Id           int       `json:"id" db:"id" example:"1"`
+	Title        string    `json:"title" form:"title" db:"title" example:"Spiderman"`
+	Image_movie  string    `json:"image_movie" form:"image_movie" db:"image_movie" example:"b00db012-1a27-43b3-895a-abd3f540362e.jpg"`
+	Genre        string    `json:"genre" form:"genre" db:"genre" example:"Action, Advanture"`
+	Release_date time.Time `json:"release_date" form:"release_date" db:"release_date" example:"2025-10-10"`
+	Duration     string    `json:"duration" form:"duration" db:"duration" example:"02:09:09"`
+	Director     string    `json:"director" form:"director" db:"director" example:"Steven Spielberg"`
+	Cast_actor   string    `json:"cast_actor" form:"cast_actor" db:"cast_actor" example:"Tom Holland, Andrew Garfield, Tobey Maguire, Zendaya"`
+	Synopsis     string    `json:"synopsis" form:"synopsis" db:"synopsis" example:"Lorem ipsum dolor sit amet"`
+	// Cinema_name  string    `json:"cinema_name" form:"cinema_name" db:"cinema_name" example:"cinemas, XXI"`
+	// Location     string    `json:"location" form:"location" db:"location" example:"semarang, solo"`
+	// Date         time.Time `json:"date" form:"date" db:"date" example:"2025-12-01"`
+	// Time         string    `json:"time" form:"time" db:"time" example:"01:35:00"`
 }
 
 type order struct {
-	Movie_Cinema_Id int    `json:"movie_cinema_id" form:"movie_cinema_id" db:"movie_cinema_id"`
-	Title           string `json:"title" form:"title" db:"title"`
-	Image_movie     string `json:"image_movie" form:"image_movie" db:"image_movie"`
-	Genre           string `json:"genre" form:"genre" db:"genre"`
-	Quantity        int    `json:"quantity" form:"quantity" db:"quantity"`
-	TotalPrice      int    `json:"total_price" form:"total_price" db:"total_price"`
-	Cinema_name     string `json:"cinema_name" form:"cinema_name" db:"cinema_name"`
-	Location        string `json:"location" form:"location" db:"location"`
+	Movie_Cinema_Id int      `json:"movie_cinema_id" form:"movie_cinema_id" db:"movie_cinema_id" example:"1"`
+	Title           string   `json:"title" form:"title" db:"title" example:"Spiderman"`
+	Image_movie     string   `json:"image_movie" form:"image_movie" db:"image_movie" example:"b00db012-1a27-43b3-895a-abd3f540362e.jpg"`
+	Genre           string   `json:"genre" form:"genre" db:"genre" example:"Action, Advanture"`
+	Quantity        int      `json:"quantity" form:"quantity" db:"quantity" example:"5"`
+	TotalPrice      int      `json:"total_price" form:"total_price" db:"total_price" example:"90000"`
+	Cinema_name     string   `json:"cinema_name" form:"cinema_name" db:"cinema_name" example:"Hiflix"`
+	Location        string   `json:"location" form:"location" db:"location" example:"Bandung"`
+	Seat            []string `json:"seat" form:"seat[]" db:"seat"`
+	User_Id         int      `json:"user_id" form:"user_id" db:"user_id" example:"1"`
+	Movie_Id        int      `json:"movie_id" form:"movie_id" db:"movie_id" example:"1"`
+	Cinema_Id       int      `json:"cinema_id" form:"cinema_id" db:"cinema_id" example:"1"`
+	Firstname       string   `json:"firstname" form:"firstname" db:"firstname" example:"doni"`
+	Email           string   `json:"email" form:"email" db:"email" binding:"required,email" example:"doni@mail.com"`
+	Phone_number    string   `json:"phone_number" form:"phone_number" db:"phone_number" example:"+6232574365"`
 }
 
 type OrderBody struct {
 	// Id              int       `json:"id" db:"id"`
 	order
-	Date string `json:"date" form:"date" `
-	Time string `json:"time" form:"time" `
+	Date string `json:"date" form:"date" example:"2006-01-02"`
+	Time string `json:"time" form:"time" example:"22:10:33"`
 	// MovieId    int    `json:"movie_id"`
 	// CinemaId   int    `json:"cinema_id"`
 }
@@ -97,8 +103,18 @@ type OrderData struct {
 	// CinemaId   int    `json:"cinema_id"`
 }
 
+type OrderSagger struct {
+	Movie_Cinema_Id int      `json:"movie_cinema_id" form:"movie_cinema_id" db:"movie_cinema_id" example:"1"`
+	Quantity        int      `json:"quantity" form:"quantity" db:"quantity" example:"5"`
+	Date            string   `json:"date" form:"date" example:"2006-01-02"`
+	Time            string   `json:"time" form:"time" example:"22:10:33"`
+	Seat            []string `json:"seat" form:"seat[]" db:"seat"`
+}
+
 type Data []Movie
 type Data2 []Allmovie
+type Data3 []Movie_cinema
+type Data4 []Cinema
 
 // type ListUsers []User
 
@@ -159,20 +175,18 @@ func MovieById(iddb int) Movie_cinema {
 	var director string
 	var cast_actor string
 	var synopsis string
-	var cinema_name string
-	var location string
-	var date time.Time
-	var time string
+	// var cinema_name string
+	// var location string
+	// var date time.Time
+	// var time string
 
 	// var detail Movie_cinema
 
 	err := conn.QueryRow(context.Background(), `
 	select movie.id, movie.title, movie.image_movie, movie.genre, 
 	movie.release_date, movie.duration, movie.director, 
-	movie.cast_actor, movie.synopsis, cinema.cinema_name, 
-	cinema."location", cinema."date", cinema."time"
-from movie join movie_cinema on movie_cinema.movie_id = movie.id 
-join cinema on movie_cinema.cinema_id = cinema.id where movie.id = $1; 
+	movie.cast_actor, movie.synopsis
+from movie where movie.id = $1; 
 	`, iddb).Scan(
 		&id,
 		&title,
@@ -183,11 +197,18 @@ join cinema on movie_cinema.cinema_id = cinema.id where movie.id = $1;
 		&director,
 		&cast_actor,
 		&synopsis,
-		&cinema_name,
-		&location,
-		&date,
-		&time,
+		// &cinema_name,
+		// &location,
+		// &date,
+		// &time,
 	)
+
+	// 	select movie.id, movie.title, movie.image_movie, movie.genre,
+	// 	movie.release_date, movie.duration, movie.director,
+	// 	movie.cast_actor, movie.synopsis, cinema.cinema_name,
+	// 	cinema."location", cinema."date", cinema."time"
+	// from movie join movie_cinema on movie_cinema.movie_id = movie.id
+	// join cinema on movie_cinema.cinema_id = cinema.id where movie.id = $1;
 
 	if err != nil {
 		// ctx.JSON(http.StatusBadRequest, controllers.TaskResponse{
@@ -208,10 +229,10 @@ join cinema on movie_cinema.cinema_id = cinema.id where movie.id = $1;
 		Director:     director,
 		Cast_actor:   cast_actor,
 		Synopsis:     synopsis,
-		Cinema_name:  cinema_name,
-		Location:     location,
-		Date:         date,
-		Time:         time,
+		// Cinema_name:  cinema_name,
+		// Location:     location,
+		// Date:         date,
+		// Time:         time,
 	}
 }
 
@@ -287,7 +308,7 @@ func InsertMovie(data Movie_body) (Movie_Data, error) {
 	// }
 	movieDate, err := time.Parse("2006-01-02", data.Release_date)
 	if err != nil {
-		return Movie_Data{}, fmt.Errorf("invalid release date format, expected YYYY-MM-DD: %v", err)
+		return Movie_Data{}, fmt.Errorf("invalid release date format, expected YYYY-MM-DD")
 	}
 
 	log.Println(data.Release_date)
@@ -336,7 +357,7 @@ func UpdateMovie(movie Movie_body) (Movie_Data, error) {
 
 	movieDate, err := time.Parse("2006-01-02", movie.Release_date)
 	if err != nil {
-		return Movie_Data{}, fmt.Errorf("invalid release date format, expected YYYY-MM-DD: %v", err)
+		return Movie_Data{}, fmt.Errorf("invalid release date format, expected YYYY-MM-DD")
 	}
 
 	log.Println(movie)
@@ -390,79 +411,79 @@ func DeleteMovie(iddb int) Movie {
 	return movieDelete
 }
 
-func OrderTicket(data OrderBody) (OrderData, error) {
-	conn := lib.DB()
-	defer conn.Close(context.Background())
+// func OrderTicket(data OrderBody) (OrderData, error) {
+// 	conn := lib.DB()
+// 	defer conn.Close(context.Background())
 
-	var order OrderData
-	var price int
+// 	var order OrderData
+// 	var price int
 
-	err := conn.QueryRow(context.Background(), `
-		SELECT cinema.price 
-		FROM movie_cinema
-		JOIN cinema ON movie_cinema.cinema_id = cinema.id
-		WHERE movie_cinema.id = $1
-	`, data.Movie_Cinema_Id).Scan(&price)
-	if err != nil {
-		return order, fmt.Errorf("error fetching price for movie_cinema_id %d: %v", data.Movie_Cinema_Id, err)
-	}
+// 	err := conn.QueryRow(context.Background(), `
+// 		SELECT cinema.price
+// 		FROM movie_cinema
+// 		JOIN cinema ON movie_cinema.cinema_id = cinema.id
+// 		WHERE movie_cinema.id = $1
+// 	`, data.Movie_Cinema_Id).Scan(&price)
+// 	if err != nil {
+// 		return order, fmt.Errorf("error fetching price for movie_cinema_id %d: %v", data.Movie_Cinema_Id, err)
+// 	}
 
-	totalPrice := price * data.Quantity
-	fmt.Println(data.Time)
-	fmt.Println(data.Date)
-	orderTime, err := time.Parse(time.TimeOnly, data.Time)
+// 	totalPrice := price * data.Quantity
+// 	fmt.Println(data.Time)
+// 	fmt.Println(data.Date)
+// 	orderTime, err := time.Parse(time.TimeOnly, data.Time)
 
-	if err != nil {
-		fmt.Println(err)
-		return OrderData{}, err
-	}
+// 	if err != nil {
+// 		fmt.Println(err)
+// 		return OrderData{}, err
+// 	}
 
-	orderDate, err := time.Parse(time.DateOnly, data.Date)
-	if err != nil {
-		fmt.Println(err)
-		return OrderData{}, err
-	}
+// 	orderDate, err := time.Parse(time.DateOnly, data.Date)
+// 	if err != nil {
+// 		fmt.Println(err)
+// 		return OrderData{}, err
+// 	}
 
-	err = conn.QueryRow(context.Background(), `
-		INSERT INTO orders (movie_cinema_id, quantity, total_price, date, time) 
-		VALUES ($1, $2, $3, $4, $5) 
-		RETURNING id, movie_cinema_id, quantity, total_price, date, time
-	`, data.Movie_Cinema_Id, data.Quantity, totalPrice, orderDate, orderTime).Scan(
-		&order.Id,
-		&order.Movie_Cinema_Id,
-		&order.Quantity,
-		&order.TotalPrice,
-		&order.Date,
-		&order.Time,
-	)
-	if err != nil {
-		return order, fmt.Errorf("error inserting order: %v", err)
-	}
+// 	err = conn.QueryRow(context.Background(), `
+// 		INSERT INTO orders (movie_cinema_id, quantity, total_price, date, time)
+// 		VALUES ($1, $2, $3, $4, $5)
+// 		RETURNING id, movie_cinema_id, quantity, total_price, date, time
+// 	`, data.Movie_Cinema_Id, data.Quantity, totalPrice, orderDate, orderTime).Scan(
+// 		&order.Id,
+// 		&order.Movie_Cinema_Id,
+// 		&order.Quantity,
+// 		&order.TotalPrice,
+// 		&order.Date,
+// 		&order.Time,
+// 	)
+// 	if err != nil {
+// 		return order, fmt.Errorf("error inserting order: %v", err)
+// 	}
 
-	err = conn.QueryRow(context.Background(), `
-		SELECT 
-			movie.title, 
-			movie.image_movie, 
-			movie.genre, 
-			cinema.cinema_name, 
-			cinema.location 
-		FROM movie_cinema
-		JOIN movie ON movie_cinema.movie_id = movie.id
-		JOIN cinema ON movie_cinema.cinema_id = cinema.id
-		WHERE movie_cinema.id = $1
-	`, data.Movie_Cinema_Id).Scan(
-		&order.Title,
-		&order.Image_movie,
-		&order.Genre,
-		&order.Cinema_name,
-		&order.Location,
-	)
-	if err != nil {
-		return order, fmt.Errorf("error fetching movie and cinema details for movie_cinema_id %d: %v", data.Movie_Cinema_Id, err)
-	}
+// 	err = conn.QueryRow(context.Background(), `
+// 		SELECT
+// 			movie.title,
+// 			movie.image_movie,
+// 			movie.genre,
+// 			cinema.cinema_name,
+// 			cinema.location
+// 		FROM movie_cinema
+// 		JOIN movie ON movie_cinema.movie_id = movie.id
+// 		JOIN cinema ON movie_cinema.cinema_id = cinema.id
+// 		WHERE movie_cinema.id = $1
+// 	`, data.Movie_Cinema_Id).Scan(
+// 		&order.Title,
+// 		&order.Image_movie,
+// 		&order.Genre,
+// 		&order.Cinema_name,
+// 		&order.Location,
+// 	)
+// 	if err != nil {
+// 		return order, fmt.Errorf("error fetching movie and cinema details for movie_cinema_id %d: %v", data.Movie_Cinema_Id, err)
+// 	}
 
-	return order, nil
-}
+// 	return order, nil
+// }
 
 func Update(data Movie_body) (Movie_Data, error) {
 	conn := lib.DB()
@@ -475,7 +496,7 @@ func Update(data Movie_body) (Movie_Data, error) {
 	if data.Release_date != "" {
 		parsedDate, err := time.Parse("2006-01-02", data.Release_date)
 		if err != nil {
-			return Movie_Data{}, fmt.Errorf("invalid release date format, expected YYYY-MM-DD: %v", err)
+			return Movie_Data{}, fmt.Errorf("invalid release date format, expected YYYY-MM-DD")
 		}
 		movieDate = parsedDate
 	}

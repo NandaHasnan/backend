@@ -1,11 +1,11 @@
 package controllers
 
 type PageInfo struct {
-	CurrentPage int
-	NextPage    int
-	PrevPage    int
-	TotalPage   int
-	TotalData   int
+	CurrentPage int `example:"1"`
+	NextPage    int `example:"102"`
+	PrevPage    int `example:"0"`
+	TotalPage   int `example:"1"`
+	TotalData   int `example:"101"`
 }
 
 type TaskResponse struct {

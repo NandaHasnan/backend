@@ -21,24 +21,61 @@ type User struct {
 }
 
 type User_credentials struct {
-	Id int `json:"id"`
+	Id int `json:"id" example:"1"`
 	// User_id  int    `json:"user_id"`
-	Email    string `json:"email" form:"email"`
-	Password string `json:"password" form:"password"`
+	Email    string `json:"email" form:"email" binding:"required,email" example:"doni@mail.com"`
+	Password string `json:"password" form:"password" binding:"required,min=8" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3MzU2MjY4ODgsInVzZXJpZCI6MTh9.lCReKJUgtJjSsEvGIWYPxrntXC-vynLCT_nTuE9sGWw"`
 }
 
 type Gabung struct {
-	Id           *int   `json:"id" db:"id"`
-	Firstname    string `json:"firstname" form:"firstname" db:"firstname"`
-	Lastname     string `json:"lastname" form:"lastname" db:"lastname"`
-	Phone_number string `json:"phone_number" form:"phone_number" db:"phone_number"`
-	Image        string `json:"image" form:"image" db:"image"`
-	Email        string `json:"email" form:"email" db:"email" binding:"required"`
-	Password     string `json:"password" form:"password" db:"password"`
+	Id           *int   `json:"id" db:"id" example:"1"`
+	Firstname    string `json:"firstname" form:"firstname" db:"firstname" example:"doni"`
+	Lastname     string `json:"lastname" form:"lastname" db:"lastname" example:"salmanan"`
+	Phone_number string `json:"phone_number" form:"phone_number" db:"phone_number" example:"+6232574365"`
+	Image        string `json:"image" form:"image" db:"image" example:"b00db012-1a27-43b3-895a-abd3f540362e.jpg"`
+	Email        string `json:"email" form:"email" db:"email" binding:"required,email" example:"doni@mail.com"`
+	Password     string `json:"password" form:"password" db:"password" binding:"required,min=8"`
 }
 
 type ListUsers []User
 type ListUsersGabung []Gabung
+
+func AddUser(user Gabung) (Gabung, error) {
+	conn := lib.DB()
+	defer conn.Close(context.Background())
+
+	var newUser Gabung
+
+	var userCredentialsId int
+	err := conn.QueryRow(context.Background(), `
+		INSERT INTO user_credentials (email, password)
+		VALUES ($1, $2)
+		RETURNING id
+	`, user.Email, user.Password).Scan(&userCredentialsId)
+	if err != nil {
+		return Gabung{}, fmt.Errorf("error inserting into user_credentials: %v", err)
+	}
+
+	err = conn.QueryRow(context.Background(), `
+		INSERT INTO users (firstname, lastname, phone_number, image, user_credentials_id)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id, firstname, lastname, phone_number, image
+	`, user.Firstname, user.Lastname, user.Phone_number, user.Image, userCredentialsId).Scan(
+		&newUser.Id,
+		&newUser.Firstname,
+		&newUser.Lastname,
+		&newUser.Phone_number,
+		&newUser.Image,
+	)
+	if err != nil {
+		return Gabung{}, fmt.Errorf("error inserting into users: %v", err)
+	}
+
+	newUser.Email = user.Email
+	newUser.Password = user.Password
+
+	return newUser, nil
+}
 
 func UserAll() ListUsersGabung {
 	conn := lib.DB()
@@ -140,15 +177,36 @@ func UserByEmail(email string) User_credentials {
 
 }
 
-func InserUser(user User_credentials) User_credentials {
+func InserUser(user User_credentials) (User_credentials, error) {
 	conn := lib.DB()
 	defer conn.Close(context.Background())
 	var userNew User_credentials
 
+	var existingUser User_credentials
+	errCheck := conn.QueryRow(context.Background(), `
+	SELECT id, email, password 
+	FROM user_credentials 
+	WHERE email = $1 AND password = $2
+	`, user.Email, user.Password).Scan(
+		&existingUser.Id,
+		&existingUser.Email,
+		&existingUser.Password,
+	)
+
+	if errCheck == nil {
+
+		fmt.Println("Email dan password sudah terdaftar")
+		return User_credentials{}, fmt.Errorf("email dan password sudah terdaftar")
+	} else if errCheck != pgx.ErrNoRows {
+
+		fmt.Println("Terjadi kesalahan saat memeriksa pengguna:", errCheck)
+		return User_credentials{}, errCheck
+	}
+
 	err := conn.QueryRow(context.Background(), `
 	INSERT INTO user_credentials (email, password) 
 	VALUES  ($1, $2)
-	RETURNING  id, email, password
+	RETURNING id, email, password
 	`, user.Email, user.Password).Scan(
 		&userNew.Id,
 		&userNew.Email,
@@ -156,13 +214,14 @@ func InserUser(user User_credentials) User_credentials {
 	)
 
 	if err != nil {
-		fmt.Println("inser error")
+		fmt.Println("Gagal menambahkan pengguna baru:", err)
+		return User_credentials{}, err
 	}
 
-	return userNew
+	return userNew, nil
 }
 
-func UpdateUser(user Gabung) Gabung {
+func UpdateUser(user Gabung) (Gabung, error) {
 	conn := lib.DB()
 	defer conn.Close(context.Background())
 
@@ -177,7 +236,7 @@ func UpdateUser(user Gabung) Gabung {
 		`, user.Email, user.Password, user.Id)
 		if err != nil {
 			fmt.Println("Error updating user_credentials:", err)
-			return Gabung{}
+			return Gabung{}, nil
 		}
 	}
 
@@ -189,7 +248,7 @@ func UpdateUser(user Gabung) Gabung {
 	fmt.Println("Received ID for user update:", user.Id)
 	if err != nil || userCredentialsId == 0 {
 		fmt.Println("Error: user_credentials not found or invalid ID:", user.Id)
-		return Gabung{}
+		return Gabung{}, nil
 	}
 
 	var count int
@@ -199,7 +258,7 @@ func UpdateUser(user Gabung) Gabung {
 	`, userCredentialsId).Scan(&count)
 	if err != nil {
 		fmt.Println("Error checking users table:", err)
-		return Gabung{}
+		return Gabung{}, nil
 	}
 
 	if count == 0 {
@@ -209,7 +268,7 @@ func UpdateUser(user Gabung) Gabung {
 		`, user.Firstname, user.Lastname, user.Phone_number, user.Image, userCredentialsId)
 		if err != nil {
 			fmt.Println("Error inserting into users:", err)
-			return Gabung{}
+			return Gabung{}, nil
 		}
 	}
 
@@ -235,11 +294,11 @@ func UpdateUser(user Gabung) Gabung {
 		)
 		if err != nil {
 			fmt.Println("Error updating users:", err)
-			return Gabung{}
+			return Gabung{}, nil
 		}
 	}
 
-	return updatedUser
+	return updatedUser, nil
 }
 
 // func UpdateUser(user User) User {
