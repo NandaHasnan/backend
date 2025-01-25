@@ -95,3 +95,50 @@ func CinemaFilter(ctx *gin.Context) {
 	})
 
 }
+
+func Payment(ctx *gin.Context) {
+	var addpayment models.PaymentInfo
+	err := ctx.ShouldBind(&addpayment)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	payment, err := models.AddPayment(addpayment)
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, task{
+		Success: true,
+		Message: "Payment tiket sukses",
+		Result:  payment,
+	})
+}
+
+func OrderMoviesNew(ctx *gin.Context) {
+
+	var orderMovie models.OrderNew
+	err := ctx.ShouldBind(&orderMovie)
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	order, err := models.OrderTicketNew(orderMovie)
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, task{
+		Success: true,
+		Message: "Order tiket sukses",
+		Result:  order,
+	})
+
+}

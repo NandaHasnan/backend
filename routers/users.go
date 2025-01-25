@@ -14,8 +14,8 @@ func UsersRouter(router *gin.RouterGroup) {
 	router.POST("/add_User", controllers.InsertUser)
 	// router.PATCH("/:id", controllers.EditUser)
 	router.PATCH("", controllers.EditUser)
-	router.PATCH("/:id", controllers.EditUserAdmin)
+	router.PATCH("/edit/:id", controllers.EditUserAdmin)
 	router.DELETE("", controllers.DeleteUser)
-	router.DELETE("/:id", controllers.DeleteUserAdmin)
-	router.GET("/profile", controllers.UserProfile)
+	router.DELETE("/delete/:id", controllers.DeleteUserAdmin)
+	router.GET("/detail/:id", controllers.UserProfile2)
 }

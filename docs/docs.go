@@ -859,6 +859,54 @@ const docTemplate = `{
                 }
             }
         },
+        "/users/detail/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Profile Users",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Detail User",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/controllers.TaskResponse2"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "$ref": "#/definitions/models.Gabung"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/users/{id}": {
             "delete": {
                 "security": [
@@ -994,23 +1042,23 @@ const docTemplate = `{
         "controllers.PageInfo": {
             "type": "object",
             "properties": {
-                "currentPage": {
+                "currentpage": {
                     "type": "integer",
                     "example": 1
                 },
-                "nextPage": {
+                "nextpage": {
                     "type": "integer",
                     "example": 102
                 },
-                "prevPage": {
+                "prevpage": {
                     "type": "integer",
                     "example": 0
                 },
-                "totalData": {
+                "totaldata": {
                     "type": "integer",
                     "example": 101
                 },
-                "totalPage": {
+                "totalpage": {
                     "type": "integer",
                     "example": 1
                 }
@@ -1046,6 +1094,10 @@ const docTemplate = `{
         "models.Allmovie": {
             "type": "object",
             "properties": {
+                "duration": {
+                    "type": "string",
+                    "example": "22:10:33"
+                },
                 "genre": {
                     "type": "string",
                     "example": "Action, Advanture"
@@ -1057,6 +1109,10 @@ const docTemplate = `{
                 "image_movie": {
                     "type": "string",
                     "example": "b00db012-1a27-43b3-895a-abd3f540362e.jpg"
+                },
+                "release_date": {
+                    "type": "string",
+                    "example": "2006-01-02"
                 },
                 "title": {
                     "type": "string",
@@ -1253,6 +1309,10 @@ const docTemplate = `{
         "models.OrderBody": {
             "type": "object",
             "properties": {
+                "cinema_id": {
+                    "type": "integer",
+                    "example": 1
+                },
                 "cinema_name": {
                     "type": "string",
                     "example": "Hiflix"
@@ -1260,6 +1320,14 @@ const docTemplate = `{
                 "date": {
                     "type": "string",
                     "example": "2006-01-02"
+                },
+                "email": {
+                    "type": "string",
+                    "example": "doni@mail.com"
+                },
+                "firstname": {
+                    "type": "string",
+                    "example": "doni"
                 },
                 "genre": {
                     "type": "string",
@@ -1276,6 +1344,14 @@ const docTemplate = `{
                 "movie_cinema_id": {
                     "type": "integer",
                     "example": 1
+                },
+                "movie_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "phone_number": {
+                    "type": "string",
+                    "example": "+6232574365"
                 },
                 "quantity": {
                     "type": "integer",
@@ -1298,6 +1374,10 @@ const docTemplate = `{
                 "total_price": {
                     "type": "integer",
                     "example": 90000
+                },
+                "user_id": {
+                    "type": "integer",
+                    "example": 1
                 }
             }
         },

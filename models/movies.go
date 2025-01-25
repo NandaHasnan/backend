@@ -11,10 +11,12 @@ import (
 )
 
 type Allmovie struct {
-	Id          int    `json:"id" db:"id" example:"1"`
-	Title       string `json:"title" form:"title" db:"title" example:"Spiderman"`
-	Image_movie string `json:"image_movie" form:"image_movie" db:"image_movie" example:"b00db012-1a27-43b3-895a-abd3f540362e.jpg"`
-	Genre       string `json:"genre" form:"genre" db:"genre" example:"Action, Advanture"`
+	Id           int       `json:"id" db:"id" example:"1"`
+	Title        string    `json:"title" form:"title" db:"title" example:"Spiderman"`
+	Image_movie  string    `json:"image_movie" form:"image_movie" db:"image_movie" example:"b00db012-1a27-43b3-895a-abd3f540362e.jpg"`
+	Genre        string    `json:"genre" form:"genre" db:"genre" example:"Action, Advanture"`
+	Release_date time.Time `json:"release_date" form:"release_date" db:"release_date" example:"2006-01-02"`
+	Duration     string    `json:"duration" form:"duration" db:"duration" example:"22:10:33"`
 }
 
 type Movie struct {
@@ -81,7 +83,7 @@ type order struct {
 	Movie_Id        int      `json:"movie_id" form:"movie_id" db:"movie_id" example:"1"`
 	Cinema_Id       int      `json:"cinema_id" form:"cinema_id" db:"cinema_id" example:"1"`
 	Firstname       string   `json:"firstname" form:"firstname" db:"firstname" example:"doni"`
-	Email           string   `json:"email" form:"email" db:"email" binding:"required,email" example:"doni@mail.com"`
+	Email           string   `json:"email" form:"email" db:"email" example:"doni@mail.com"`
 	Phone_number    string   `json:"phone_number" form:"phone_number" db:"phone_number" example:"+6232574365"`
 }
 
@@ -95,8 +97,8 @@ type OrderBody struct {
 }
 
 type OrderData struct {
+	Id int `db:"id"`
 	order
-	Id   int       `db:"id"`
 	Date time.Time `db:"date"`
 	Time time.Time `db:"time"`
 	// MovieId    int    `json:"movie_id"`
@@ -127,7 +129,7 @@ func MovieAll(page int, limit int, search string, sort string) Data2 {
 	search = fmt.Sprintf("%%%s%%", search)
 
 	query := fmt.Sprintf(`
-		SELECT id, title, image_movie, genre
+		SELECT id, title, image_movie, genre, release_date, duration
 		FROM movie
 		WHERE title ILIKE $3
 		ORDER BY id %s
@@ -297,6 +299,53 @@ from movie where id = $1;
 
 // }
 
+// func InsertMovie(data Movie_body) (Movie_Data, error) {
+// 	conn := lib.DB()
+// 	defer conn.Close(context.Background())
+
+// 	var movieInsert Movie_Data
+
+// 	// if data.Release_date == "" {
+// 	// 	return Movie_Data{}, fmt.Errorf("release date is required")
+// 	// }
+// 	movieDate, err := time.Parse("2006-01-02", data.Release_date)
+// 	if err != nil {
+// 		return Movie_Data{}, fmt.Errorf("invalid release date format, expected YYYY-MM-DD")
+// 	}
+
+// 	log.Println(data.Release_date)
+// 	// if data.Duration == "" {
+// 	// 	return Movie_Data{}, fmt.Errorf("duration is required")
+// 	// }
+// 	movieDuration, err := time.Parse("15:04:05", data.Duration)
+// 	if err != nil {
+// 		return Movie_Data{}, fmt.Errorf("invalid duration format, expected HH:mm:ss: %v", err)
+// 	}
+
+// 	err = conn.QueryRow(context.Background(), `
+// 		INSERT INTO movie (title, image_movie, genre, release_date, duration, director, cast_actor, synopsis)
+// 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+// 		RETURNING id, title, image_movie, genre, release_date, duration, director, cast_actor, synopsis
+// 	`, data.Title, data.Image_movie, data.Genre, movieDate, movieDuration, data.Director, data.Cast_actor, data.Synopsis).
+// 		Scan(
+// 			&movieInsert.Id,
+// 			&movieInsert.Title,
+// 			&movieInsert.Image_movie,
+// 			&movieInsert.Genre,
+// 			&movieInsert.Release_date,
+// 			&movieInsert.Duration,
+// 			&movieInsert.Director,
+// 			&movieInsert.Cast_actor,
+// 			&movieInsert.Synopsis,
+// 		)
+
+// 	if err != nil {
+// 		return Movie_Data{}, fmt.Errorf("failed to insert movie: %v", err)
+// 	}
+
+// 	return movieInsert, nil
+// }
+
 func InsertMovie(data Movie_body) (Movie_Data, error) {
 	conn := lib.DB()
 	defer conn.Close(context.Background())
@@ -321,14 +370,14 @@ func InsertMovie(data Movie_body) (Movie_Data, error) {
 	}
 
 	err = conn.QueryRow(context.Background(), `
-		INSERT INTO movie (title, image_movie, genre, release_date, duration, director, cast_actor, synopsis) 
+		INSERT INTO movie ( image_movie, title, genre, release_date, duration, director, cast_actor, synopsis) 
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id, title, image_movie, genre, release_date, duration, director, cast_actor, synopsis
-	`, data.Title, data.Image_movie, data.Genre, movieDate, movieDuration, data.Director, data.Cast_actor, data.Synopsis).
+	`, data.Image_movie, data.Title, data.Genre, movieDate, movieDuration, data.Director, data.Cast_actor, data.Synopsis).
 		Scan(
 			&movieInsert.Id,
-			&movieInsert.Title,
 			&movieInsert.Image_movie,
+			&movieInsert.Title,
 			&movieInsert.Genre,
 			&movieInsert.Release_date,
 			&movieInsert.Duration,
@@ -367,23 +416,24 @@ func UpdateMovie(movie Movie_body) (Movie_Data, error) {
 		return Movie_Data{}, fmt.Errorf("invalid duration format, expected HH:mm:ss: %v", err)
 	}
 
-	conn.QueryRow(context.Background(), `
+	if movie.Image_movie != "" || movie.Title != "" || movie.Genre != "" || movie.Release_date != "" || movie.Duration != "" || movie.Director != "" || movie.Cast_actor != "" || movie.Synopsis != "" {
+		conn.QueryRow(context.Background(), `
 		UPDATE movie
-		SET title = $1, image_movie = $2, genre = $3, release_date = $4, duration = $5, director = $6, cast_actor = $7, synopsis = $8
+		SET image_movie = $1, title = $2, genre = $3, release_date = $4, duration = $5, director = $6, cast_actor = $7, synopsis = $8
 		WHERE id = $9
-		RETURNING id, title, image_movie, genre, release_date, duration, director, cast_actor, synopsis
-	`, movie.Title, movie.Image_movie, movie.Genre, movieDate, movieDuration, movie.Director, movie.Cast_actor, movie.Synopsis, movie.Id).Scan(
-		&movieUpdate.Id,
-		&movieUpdate.Title,
-		&movieUpdate.Image_movie,
-		&movieUpdate.Genre,
-		&movieUpdate.Release_date,
-		&movieUpdate.Duration,
-		&movieUpdate.Director,
-		&movieUpdate.Cast_actor,
-		&movieUpdate.Synopsis,
-	)
-
+		RETURNING id, image_movie, title, genre,  release_date, duration, director, cast_actor, synopsis
+	`, movie.Image_movie, movie.Title, movie.Genre, movieDate, movieDuration, movie.Director, movie.Cast_actor, movie.Synopsis, movie.Id).Scan(
+			&movieUpdate.Id,
+			&movieUpdate.Image_movie,
+			&movieUpdate.Title,
+			&movieUpdate.Genre,
+			&movieUpdate.Release_date,
+			&movieUpdate.Duration,
+			&movieUpdate.Director,
+			&movieUpdate.Cast_actor,
+			&movieUpdate.Synopsis,
+		)
+	}
 	return movieUpdate, nil
 }
 

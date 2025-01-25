@@ -3,6 +3,7 @@ package models
 import (
 	"backend/lib"
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
 
@@ -57,15 +58,15 @@ func AddUser(user Gabung) (Gabung, error) {
 	}
 
 	err = conn.QueryRow(context.Background(), `
-		INSERT INTO users (firstname, lastname, phone_number, image, user_credentials_id)
+		INSERT INTO users ( image, firstname, lastname, phone_number, user_credentials_id)
 		VALUES ($1, $2, $3, $4, $5)
-		RETURNING id, firstname, lastname, phone_number, image
-	`, user.Firstname, user.Lastname, user.Phone_number, user.Image, userCredentialsId).Scan(
+		RETURNING id,  image, firstname, lastname, phone_number
+	`, user.Image, user.Firstname, user.Lastname, user.Phone_number, userCredentialsId).Scan(
 		&newUser.Id,
+		&newUser.Image,
 		&newUser.Firstname,
 		&newUser.Lastname,
 		&newUser.Phone_number,
-		&newUser.Image,
 	)
 	if err != nil {
 		return Gabung{}, fmt.Errorf("error inserting into users: %v", err)
@@ -82,8 +83,8 @@ func UserAll() ListUsersGabung {
 	defer conn.Close(context.Background())
 
 	rows, err := conn.Query(context.Background(), `
-		SELECT users.id, users.firstname, users.lastname, users.phone_number, users.image,
-		user_credentials.email, user_credentials.password
+		SELECT users.id, COALESCE(users.firstname, '') as firstname, COALESCE(users.lastname, '') as lastname, COALESCE(users.phone_number, '') as phone_number, COALESCE(users.image, '') as image,
+		COALESCE(user_credentials.email, '') as email, COALESCE(user_credentials.password, '') as password
 		FROM users RIGHT JOIN user_credentials ON users.user_credentials_id = user_credentials.id
 	`)
 	if err != nil {
@@ -124,41 +125,56 @@ func UserById(iddb int) Gabung {
 	conn := lib.DB()
 	defer conn.Close(context.Background())
 
-	var id int
+	var id sql.NullInt32 // Menggunakan sql.NullInt32 untuk menangani nilai NULL
 	var firstname string
 	var lastname string
 	var phone_number string
 	var image string
 	var email string
 	var password string
-	// var point int
-	// var user Gabung
 
+	// Query data dari database
 	err := conn.QueryRow(context.Background(), `
-	SELECT users.id, COALESCE(users.firstname, ''), COALESCE(users.lastname, ''), COALESCE(users.phone_number, ''), COALESCE(users.image, ''),
-		COALESCE(user_credentials.email, ''), COALESCE(user_credentials.password, '')
-		FROM users RIGHT JOIN user_credentials ON users.user_credentials_id = user_credentials.id WHERE users.id = $1
+		SELECT 
+			users.id, 
+			COALESCE(users.firstname, ''), 
+			COALESCE(users.lastname, ''), 
+			COALESCE(users.phone_number, ''), 
+			COALESCE(users.image, ''),
+			COALESCE(user_credentials.email, ''), 
+			COALESCE(user_credentials.password, '')
+		FROM users 
+		RIGHT JOIN user_credentials 
+		ON users.user_credentials_id = user_credentials.id 
+		WHERE user_credentials.id = $1
 	`, iddb).Scan(&id, &firstname, &lastname, &phone_number, &image, &email, &password)
 
+	// Jika terjadi error saat query
 	if err != nil {
-		// ctx.JSON(http.StatusBadRequest, controllers.TaskResponse{
-		// 	Success: false,
-		// 	Message: "invalid all user",
-		// 	// Result:  id,
-		// })
-
 		fmt.Println(err)
+		fmt.Println("id tidak ada")
+		// Mengembalikan Gabung dengan nilai default
+		return Gabung{}
 	}
-	// return user
+
+	// Konversi nilai id dari sql.NullInt32 ke *int
+	var idPointer *int
+	if id.Valid {
+		temp := int(id.Int32)
+		idPointer = &temp
+	} else {
+		idPointer = nil
+	}
+
+	// Mengembalikan hasil sebagai struct Gabung
 	return Gabung{
-		Id:           &id,
+		Id:           idPointer,
 		Firstname:    firstname,
 		Lastname:     lastname,
 		Phone_number: phone_number,
 		Image:        image,
 		Email:        email,
 		Password:     password,
-		// Point: point,
 	}
 }
 

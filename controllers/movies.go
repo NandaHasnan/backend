@@ -602,7 +602,7 @@ func DeleteMovies(ctx *gin.Context) {
 // @Router /movies [get]
 func AllMovieDB(ctx *gin.Context) {
 	pageParams, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
-	limitParams, err := strconv.Atoi(ctx.DefaultQuery("limit", "5"))
+	limitParams, err := strconv.Atoi(ctx.DefaultQuery("limit", "10"))
 	if err != nil {
 		log.Println(err)
 	}
