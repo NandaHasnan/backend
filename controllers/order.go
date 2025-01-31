@@ -142,3 +142,50 @@ func OrderMoviesNew(ctx *gin.Context) {
 	})
 
 }
+
+func GetSeat(ctx *gin.Context) {
+
+	seats, _ := models.GetAllSeat()
+
+	ctx.JSON(http.StatusOK, TaskResponse2{
+		Success: true,
+		Message: "All seat",
+		Result:  seats,
+	})
+
+}
+
+// func GetSeat(ctx *gin.Context) {
+// 	seat := models.Seat
+// 	// fmt.Println(user)
+// 	ctx.JSON(http.StatusOK, TaskResponse2{
+// 		Success: true,
+// 		Message: "All seat",
+// 		Result:  seat,
+// 	})
+
+// }
+
+// Order godoc
+// @Schemes
+// @Description Order history
+// @Tags Order
+// @Accept json
+// @Produce json
+// @Success 200 {object} TaskResponse2{result=models.OrderNew}
+// @Security ApiKeyAuth
+// @Router /order/history [get]
+func OrderIdUser(ctx *gin.Context) {
+	val, isAvail := ctx.Get("userid")
+	userId := int(val.(float64))
+
+	order, _ := models.OrderById(userId)
+
+	if isAvail {
+		ctx.JSON(http.StatusOK, TaskResponse2{
+			Success: true,
+			Message: "Order Id",
+			Result:  order,
+		})
+	}
+}

@@ -252,6 +252,44 @@ definitions:
         example: 1
         type: integer
     type: object
+  models.OrderNew:
+    properties:
+      cinema_name:
+        example: Spiderman
+        type: string
+      date:
+        example: "2006-01-02"
+        type: string
+      email:
+        example: doni@mail.com
+        type: string
+      full_name:
+        example: doni
+        type: string
+      id:
+        example: 1
+        type: integer
+      movie_title:
+        example: Spiderman
+        type: string
+      payment:
+        example: "+6232574365"
+        type: string
+      phone_number:
+        example: "+6232574365"
+        type: string
+      time:
+        example: "22:10:33"
+        type: string
+      total_price:
+        example: 90000
+        type: integer
+      total_seat:
+        type: string
+      user_id:
+        example: 1
+        type: integer
+    type: object
   models.User_credentials:
     properties:
       email:
@@ -624,6 +662,27 @@ paths:
             - properties:
                 result:
                   $ref: '#/definitions/models.Cinema'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      tags:
+      - Order
+  /order/history:
+    get:
+      consumes:
+      - application/json
+      description: Order history
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/controllers.TaskResponse2'
+            - properties:
+                result:
+                  $ref: '#/definitions/models.OrderNew'
               type: object
       security:
       - ApiKeyAuth: []

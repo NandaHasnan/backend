@@ -36,18 +36,25 @@ type PaymentInfo struct {
 }
 
 type OrderNew struct {
-	Id           int      `json:"id" form:"id" db:"id" example:"1"`
-	Date         string   `json:"date" form:"date" db:"date" example:"2006-01-02"`
-	Time         string   `json:"time" form:"time" db:"time" example:"22:10:33"`
-	Movie_Title  string   `json:"movie_title" form:"movie_title" db:"movie_title" example:"Spiderman"`
-	Cinema_name  string   `json:"cinema_name" form:"cinema_name" db:"cinema_name" example:"Spiderman"`
-	Total_Seat   []string `json:"total_seat" form:"[]total_seat" db:"total_seat"`
-	Total_Price  int      `json:"total_price" form:"total_price" db:"total_price" example:"90000"`
-	Full_name    string   `json:"full_name" form:"full_name" db:"full_name" example:"doni"`
-	Email        string   `json:"email" form:"email" db:"email" example:"doni@mail.com"`
-	Phone_number string   `json:"phone_number" form:"phone_number" db:"phone_number" example:"+6232574365"`
-	Payment      string   `json:"payment" form:"payment" db:"payment" example:"+6232574365"`
+	Id           *int   `json:"id" form:"id" db:"id" example:"1"`
+	User_Id      int    `json:"user_id" form:"user_id" db:"user_id" example:"1"`
+	Date         string `json:"date" form:"date" db:"date" example:"2006-01-02"`
+	Time         string `json:"time" form:"time" db:"time" example:"22:10:33"`
+	Movie_Title  string `json:"movie_title" form:"movie_title" db:"movie_title" example:"Spiderman"`
+	Cinema_name  string `json:"cinema_name" form:"cinema_name" db:"cinema_name" example:"Spiderman"`
+	Total_Seat   string `json:"total_seat" form:"total_seat" db:"total_seat"`
+	Total_Price  int    `json:"total_price" form:"total_price" db:"total_price" example:"90000"`
+	Full_name    string `json:"full_name" form:"full_name" db:"full_name" example:"doni"`
+	Email        string `json:"email" form:"email" db:"email" example:"doni@mail.com"`
+	Phone_number string `json:"phone_number" form:"phone_number" db:"phone_number" example:"+6232574365"`
+	Payment      string `json:"payment" form:"payment" db:"payment" example:"+6232574365"`
 }
+
+type Seat struct {
+	Total_Seat string `json:"total_seat" form:"total_seat" db:"total_seat"`
+}
+
+type ListSeat []Seat
 
 func FilterCinema(date string, time string, location string) (Data4, error) {
 	conn := lib.DB()
@@ -209,15 +216,16 @@ func OrderTicketNew(data OrderNew) (OrderNew, error) {
 	// 	return OrderData{}, fmt.Errorf("invalid date format: %v", err)
 	// }
 
-	seatArray := fmt.Sprintf(`{%s}`, strings.Join(data.Total_Seat, ",")) // Format as {A1,A2,A3}
+	// seatArray := fmt.Sprintf(`{%s}`, strings.Join(data.Total_Seat, ",")) // Format as {A1,A2,A3}
 	// fmt.Println("Seat Array for Database:", seatArray)
 
 	err := conn.QueryRow(context.Background(), `
-		INSERT INTO order_new (date, time, movie_title, cinema_name, total_seat, total_price, full_name, email, phone_number, payment)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-		RETURNING id, date, time, movie_title, cinema_name, total_seat, total_price, full_name, email, phone_number, payment
-	`, data.Date, data.Time, data.Movie_Title, data.Cinema_name, seatArray, data.Total_Price, data.Full_name, data.Email, data.Phone_number, data.Payment).Scan(
+		INSERT INTO order_new (user_id, date, time, movie_title, cinema_name, total_seat, total_price, full_name, email, phone_number, payment)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		RETURNING id, user_id, date, time, movie_title, cinema_name, total_seat, total_price, full_name, email, phone_number, payment
+	`, data.User_Id, data.Date, data.Time, data.Movie_Title, data.Cinema_name, data.Total_Seat, data.Total_Price, data.Full_name, data.Email, data.Phone_number, data.Payment).Scan(
 		&order.Id,
+		&order.User_Id,
 		&order.Date,
 		&order.Time,
 		&order.Movie_Title,
@@ -258,6 +266,40 @@ func OrderTicketNew(data OrderNew) (OrderNew, error) {
 	return order, nil
 }
 
+// func GetAllSeat(data Seat) (Seat, error) {
+// 	conn := lib.DB()
+// 	defer conn.Close(context.Background())
+
+// 	var order Seat
+
+// 	_, err := conn.Query(context.Background(), `
+// 		SELECT total_seat FROM order_new
+// 	`)
+// 	if err != nil {
+// 		return order, fmt.Errorf("error inserting order: %v", err)
+// 	}
+
+// 	return order, nil
+// }
+
+func GetAllSeat() ([]Seat, error) {
+	conn := lib.DB()
+	defer conn.Close(context.Background())
+
+	rows, err := conn.Query(context.Background(), `SELECT total_seat FROM order_new`)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute query: %w", err)
+	}
+	defer rows.Close()
+
+	seats, err := pgx.CollectRows(rows, pgx.RowToStructByName[Seat])
+	if err != nil {
+		return nil, fmt.Errorf("failed to collect rows: %w", err)
+	}
+
+	return seats, nil
+}
+
 func AddPayment(data PaymentInfo) (PaymentInfo, error) {
 	conn := lib.DB()
 	defer conn.Close(context.Background())
@@ -286,4 +328,43 @@ func AddPayment(data PaymentInfo) (PaymentInfo, error) {
 	}
 
 	return payment, nil
+}
+
+func OrderById(iddb int) ([]OrderNew, error) {
+	conn := lib.DB()
+	defer conn.Close(context.Background())
+
+	var orders []OrderNew
+
+	rows, err := conn.Query(context.Background(), `
+        SELECT id, date, time, movie_title, cinema_name, total_seat, total_price, payment, full_name, email, phone_number 
+        FROM order_new WHERE user_id = $1;
+    `, iddb)
+	if err != nil {
+		fmt.Println("Error executing query:", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var order OrderNew
+		err := rows.Scan(&order.Id, &order.Date, &order.Time, &order.Movie_Title, &order.Cinema_name, &order.Total_Seat,
+			&order.Total_Price, &order.Payment, &order.Full_name, &order.Email, &order.Phone_number)
+		if err != nil {
+			fmt.Println("Error scanning row:", err)
+			return nil, err
+		}
+		orders = append(orders, order)
+	}
+
+	if err := rows.Err(); err != nil {
+		fmt.Println("Error iterating over rows:", err)
+		return nil, err
+	}
+
+	if len(orders) == 0 {
+		fmt.Println("No orders found for user with ID:", iddb)
+	}
+
+	return orders, nil
 }

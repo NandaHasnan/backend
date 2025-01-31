@@ -589,6 +589,45 @@ const docTemplate = `{
                 }
             }
         },
+        "/order/history": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Order history",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Order"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/controllers.TaskResponse2"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "$ref": "#/definitions/models.OrderNew"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/profile": {
             "get": {
                 "security": [
@@ -1374,6 +1413,58 @@ const docTemplate = `{
                 "total_price": {
                     "type": "integer",
                     "example": 90000
+                },
+                "user_id": {
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
+        "models.OrderNew": {
+            "type": "object",
+            "properties": {
+                "cinema_name": {
+                    "type": "string",
+                    "example": "Spiderman"
+                },
+                "date": {
+                    "type": "string",
+                    "example": "2006-01-02"
+                },
+                "email": {
+                    "type": "string",
+                    "example": "doni@mail.com"
+                },
+                "full_name": {
+                    "type": "string",
+                    "example": "doni"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "movie_title": {
+                    "type": "string",
+                    "example": "Spiderman"
+                },
+                "payment": {
+                    "type": "string",
+                    "example": "+6232574365"
+                },
+                "phone_number": {
+                    "type": "string",
+                    "example": "+6232574365"
+                },
+                "time": {
+                    "type": "string",
+                    "example": "22:10:33"
+                },
+                "total_price": {
+                    "type": "integer",
+                    "example": 90000
+                },
+                "total_seat": {
+                    "type": "string"
                 },
                 "user_id": {
                     "type": "integer",

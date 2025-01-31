@@ -13,4 +13,6 @@ func OrderMovie(router *gin.RouterGroup) {
 	// router.POST("", controllers.OrderMovies)
 	router.GET("/cinema", controllers.CinemaFilter)
 	router.POST("/payment", controllers.Payment)
+	router.GET("/seat", controllers.GetSeat)
+	router.GET("/history", controllers.OrderIdUser)
 }
